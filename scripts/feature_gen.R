@@ -19,33 +19,41 @@ MaxentPerl <- function(seqs, script="score5.pl") {
   return(df)
 }
 
-## Calculate the MAXENT score for the 5' splice sites of exons
-## exons: A GRanges object that contains the genomic coordinates for the exons to be scored
-## Returns: A dataframe with the sequences and their associated splice site scores
-Score5SS <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19) {
+## Get the 5'SS sequences for a list of exons
+## exons: A GRanges object of exons
+GetSS5Seq <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19) {
   # The 5'SS is the last 3 nucleotides of the exon + the next 6 intronic nucleotides
   # Add the 6 downstream intronic bases to the coordinates
   sites <- flank(exons, 6, start=F)
   # Then make sure the total width of the range is the length of the 5'SS (starting from the last nucleotide in the site)
   sites <- resize(sites, 9, fix="end")
 
-  seqs <- getSeq(genome, sites, as.character=T)
-
-  return(MaxentPerl(seqs))
+  return(getSeq(genome, sites, as.character=T))
 }
 
-## Calculate the MAXENT score for the 3' splice sites of exons
-## exons: A GRanges object that contains the genomic coordinates for the exons to be scored
-## Returns: A dataframe with the sequences and their associated splice site scores
-Score3SS <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19) {
+## Get the 3'SS sequences for a list of exons
+## exons: A GRanges object of exons
+GetSS3Seq <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19) {
   # The 3'SS is 20 nucleotides of the upstream intron + the first 3 nucleotides of the exon
   # Add the 20 upstream intronic bases to the coordinates
   sites <- flank(exons, 20)
   # Then make sure the total width of the range is the length of the 3'SS (starting from the first nucleotide in the site)
   sites <- resize(sites, 23)
 
-  seqs <- getSeq(genome, sites, as.character=T)
+  return(getSeq(genome, sites, as.character=T))
+}
 
+## Calculate the MAXENT score for the 5' splice sites of exons
+## exons: A GRanges object that contains the genomic coordinates for the exons to be scored
+## Returns: A dataframe with the sequences and their associated splice site scores
+Score5SS <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19) {
+  return(MaxentPerl(GetSS5Seq(exons, genome)))
+}
+
+## Calculate the MAXENT score for the 3' splice sites of exons
+## exons: A GRanges object that contains the genomic coordinates for the exons to be scored
+## Returns: A dataframe with the sequences and their associated splice site scores
+Score3SS <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19) {
   return(MaxentPerl(seqs, script="score3.pl"))
 }
 
