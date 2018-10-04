@@ -62,6 +62,10 @@ Score3SS <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19) {
 ## column 7: number of uniquely mapping reads crossing the junction
 ## column 8: number of multi-mapping reads crossing the junction
 ## column 9: maximum spliced alignment overhang
+## Returns: A 2-element list, where the first element has all exons with associated 5'SS usage,
+## and the second element has all exons with associated 3'SS usage
+## We must split up the exons this way because we might not get enough sequencing coverage to
+## calculate the SS usage for both sites in all exons
 SSUsage <- function(file, exs) {
   python.load("ss_usage.py")
   ## TODO Could get the nrows to pass to read.csv
@@ -84,9 +88,39 @@ SSUsage <- function(file, exs) {
 
   ## maxgap=1 allows introns adjacent to exons to be considered 'overlapping'
   ## Essentially gets junctions that go to at least one canonical splice site
-  introns <- gr[unique(subjectHits(findOverlaps(exs, gr, maxgap=1)))]
-  ## Get introns that don't overlap any exons. Makes sure the splice site that was not matched in the previous command
-  ## is not cryptic (going into the exon). Using annotated splice sites should ensure not cryptic splicing into the intron
-  introns <- introns[!introns %over% exs]
-  return(introns)
+  op <- findOverlapPairs(exs, gr, maxgap=1)
+  ss5 <- op[abs(end(first(op)) - start(second(op))) == 1]
+  ss3 <- op[abs(start(first(op)) - end(second(op))) == 1]
+
+  ## Determine which exon IDs are duplicated, so we can check those for the best psi5/psi3 values
+  ## This should speed up the endoapply step by only looking at splice sites with multiple options
+  ss5Dupes <- duplicated(first(ss5)$exon_id) | duplicated(first(ss5)$exon_id, fromLast=T)
+  ss3Dupes <- duplicated(first(ss3)$exon_id) | duplicated(first(ss3)$exon_id, fromLast=T)
+
+  ## Split the splice site exon/intron pairs into those that have duplicate exons and those that don't
+  ss5ByDupes <- split(ss5, ss5Dupes)
+  ss3ByDupes <- split(ss3, ss3Dupes)
+
+  ## Split the duplicated exons by their exon IDs
+  ss5ByDupesAndExID <- split(second(ss5ByDupes$"TRUE"), first(ss5ByDupes$"TRUE")$exon_id)
+  ss3ByDupesAndExID <- split(second(ss3ByDupes$"TRUE"), first(ss3ByDupes$"TRUE")$exon_id)
+
+  ## SLOW: Select the exons from each set of duplicates that has the highest psi value for its relevant splice site
+  ## Then merge the GRangesList back into a GRanges object, because we don't need separation by exon ID anymore
+  goodSS5Introns <- unlist(endoapply(ss5ByDupesAndExID, function(gr) gr[which(gr$psi5 == max(gr$psi5))[[1]]]))
+  goodSS3Introns <- unlist(endoapply(ss3ByDupesAndExID, function(gr) gr[which(gr$psi3 == max(gr$psi3))[[1]]]))
+
+  ## Get the list of exons after filtering out duplicates
+  ## The ordering of exons is the same as the introns we previously selected because the 'split' function
+  ## does not scramble the exon IDs
+  goodSS5Exons <- first(ss5ByDupes$"TRUE")[!duplicated(first(ss5ByDupes$"TRUE")$exon_id)]
+  goodSS3Exons <- first(ss3ByDupes$"TRUE")[!duplicated(first(ss3ByDupes$"TRUE")$exon_id)]
+
+  ## Attach the SS usage values to the exons
+  ## This is defined as the psi value opposite to the splice site in question
+  ## For example, for SS5 usage, this is the psi3 value for the intron with the highest psi5 value
+  goodSS5Exons$usage <- goodSS5Introns$psi3
+  goodSS3Exons$usage <- goodSS3Introns$psi5
+
+  return(list(ss5=goodSS5Exons, ss3=goodSS3Exons))
 }
