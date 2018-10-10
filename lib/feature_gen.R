@@ -75,7 +75,7 @@ Score3SS <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19) {
 ## We must split up the exons this way because we might not get enough sequencing coverage to
 ## calculate the SS usage for both sites in all exons
 SSUsage <- function(file, exs) {
-  python.load("ss_usage.py")
+  python.load(file.path("..", "lib", "ss_usage.py"))
   ## TODO Could get the nrows to pass to read.csv
   tempfile <- python.call("get_usage", file)
   df <- read.csv(tempfile, colClasses=c("annotated" = "logical", "intron_location" = "character"))
