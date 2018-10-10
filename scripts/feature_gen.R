@@ -54,7 +54,7 @@ Score5SS <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19) {
 ## exons: A GRanges object that contains the genomic coordinates for the exons to be scored
 ## Returns: A dataframe with the sequences and their associated splice site scores
 Score3SS <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19) {
-  return(MaxentPerl(seqs, script="score3.pl"))
+  return(MaxentPerl(GetSS3Seq(exons, genome), script="score3.pl"))
 }
 
 ## Calculate the 5'SS or 3'SS usage for all splice sites in an RNA-seq study aligned with STAR
