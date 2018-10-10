@@ -71,4 +71,6 @@ ss3ExonsWithSSV <- split(usage$ss3, usage$ss3$ssSeq %in% ss3mutSeq)
 ## and those that aren't found in any wt genomic exon
 ## NB: There are no mut 3'SS HGMD sequences found in wt genomic exons. This is probably because the 3'SS
 ## is 23 bases instead of 9, and therefore dramatically less likely to match another wt 3'SS
+pdf(file.path("..", "plots", "hgmd_ss5_maxent_in_genome.pdf"))
 boxplot(list(SSV_in_genome=ss5ExonsWithSSV$"TRUE"$ssScore, SSV_not_in_genome=ss5ExonsWithSSV$"FALSE"$ssScore), ylab="5'SS MAXENT")
+dev.off()

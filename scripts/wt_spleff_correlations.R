@@ -80,6 +80,6 @@ corMat <- cor(as.data.frame(mcols(goodExons)[, c("splEff", "ss5score", "ss3score
 
 colPal <- colorRampPalette(rev(c("#7F0000", "red", "#FF7F00", "yellow", "white",
         "cyan", "#007FFF", "blue", "#00007F")))
-#pdf("feature_cor.pdf")
+pdf(file.path("..", "lib", "feature_cor.pdf"))
 corrplot(corMat, method="ellipse", col=colPal(200))
-#dev.off()
+dev.off()
