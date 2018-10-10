@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 ## Calculates the differences b/w wt/mut Maxent scores in HGMD alleles
 ## Only the SSMs outside of the canonical GT/AG dinucleotides
-source("feature_gen.R")
+source(file.path("..", "lib", "feature_gen.R"))
 
 hgmd <- read.csv(file.path("/", "home", "datasets", "HGMD_2016", "HGMD_Advanced_Substitutions.csv"), stringsAsFactors=F)
 wtPat <- "([[:alpha:]]+)\\[([[:alpha:]])/[[:alpha:]]\\]([[:alpha:]]+)"
@@ -53,7 +53,7 @@ ss3mutScores <- MaxentPerl(ss3mutSeq, script="score3.pl")
 
 ## Get all exons, with associated splice sites scores and usages
 #usage <- SSUsage("~/scratch/amiloride/star/ctrl/SJ.out.tab", exons(TxDb.Hsapiens.UCSC.hg19.knownGene))
-usage <- readRDS("ss_usage.rds")
+usage <- readRDS(file.path("..", "data", "ss_usage.rds"))
 
 ## Get the splice site sequences for all exons that have splice site usage data
 allSS5Scores <- Score5SS(usage$ss5)

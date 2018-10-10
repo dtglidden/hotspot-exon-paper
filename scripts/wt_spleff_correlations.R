@@ -4,7 +4,7 @@
 ## SS3Usage (psi3), SS5Usage (psi5) with nearest possible flanking exons
 ## SS5 and SS3 Maxent scores
 ## SS5score - flanking SS3score; SS3score - flanking SS5score
-source("feature_gen.R")
+source(file.path("..", "lib", "feature_gen.R"))
 library(corrplot)
 
 GetPsis <- function(fIntrons, fExons) {
