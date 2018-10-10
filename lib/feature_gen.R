@@ -132,3 +132,23 @@ SSUsage <- function(file, exs) {
 
   return(list(ss5=goodSS5Exons, ss3=goodSS3Exons))
 }
+
+## Tile through a string (window size n) and increment if a substring occurs in an environment (hashtable)
+countSubstringsOfN <- function(x, n, e) {
+  nc <- nchar(x)
+  return(sum(substring(x, 1:(nc - n + 1), n:nc) %in% e))
+}
+
+## Calculate the density of Chasin exonic cis-elements in exons
+## exons: A GRanges object of exons
+## genome: A BSgenome object that holds sequence info
+## getESEs: A logical determining if we should calculate the ESE density (vs. the ESS density)
+ChasinCisDen <- function(exons, getESEs=T, genome=BSgenome.Hsapiens.UCSC.hg19) {
+  elems <- read.table(file.path("..", "data", ifelse(getESEs, "chasin_enhancers.txt", "chasin_silencers.txt")),
+                      stringsAsFactors=F)$V1
+  exLn <- width(exons)
+
+  countSubsV <- Vectorize(countSubstringsOfN, "x", USE.NAMES=F)
+  total <- countSubsV(getSeq(genome, exons, as.character=T), 6, elems)
+  return(total / exLn)
+}
