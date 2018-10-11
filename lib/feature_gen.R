@@ -11,9 +11,10 @@ library(rPython, quietly=T)
 MaxentPerl <- function(seqs, script="score5.pl") {
   wd <- getwd()
   setwd(file.path("..", "maxent"))
-  scores <- system2("perl", script, stdout=T, input=seqs)
+  scores <- system2("perl", script, stdout=T, input=seqs$seq)
   df <- data.frame(do.call(rbind, strsplit(scores, "\t", fixed=T)), stringsAsFactors=F)
   colnames(df) <- c("seq", "score")
+  df$exon_id <- seqs$exon_id
   df$score <- as.numeric(df$score)
   setwd(wd)
   return(df)
@@ -25,10 +26,14 @@ GetSS5Seq <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19) {
   # The 5'SS is the last 3 nucleotides of the exon + the next 6 intronic nucleotides
   # Add the 6 downstream intronic bases to the coordinates
   sites <- flank(exons, 6, start=F)
+
   # Then make sure the total width of the range is the length of the 5'SS (starting from the last nucleotide in the site)
   sites <- resize(sites, 9, fix="end")
 
-  return(getSeq(genome, sites, as.character=T))
+  # Necessary when the resizing functions above create GRanges that are outside of their chromosomes
+  sites <- sites[end(sites) <= seqlengths(exs)[as.character(seqnames(sites))] & start(sites) > 0]
+
+  return(list(seq=getSeq(genome, sites, as.character=T), exon_id=sites$exon_id))
 }
 
 ## Get the 3'SS sequences for a list of exons
@@ -37,10 +42,14 @@ GetSS3Seq <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19) {
   # The 3'SS is 20 nucleotides of the upstream intron + the first 3 nucleotides of the exon
   # Add the 20 upstream intronic bases to the coordinates
   sites <- flank(exons, 20)
+
   # Then make sure the total width of the range is the length of the 3'SS (starting from the first nucleotide in the site)
   sites <- resize(sites, 23)
 
-  return(getSeq(genome, sites, as.character=T))
+  # Necessary when the resizing functions above create GRanges that are outside of their chromosomes
+  sites <- sites[end(sites) <= seqlengths(exs)[as.character(seqnames(sites))] & start(sites) > 0]
+
+  return(list(seq=getSeq(genome, sites, as.character=T), exon_id=sites$exon_id))
 }
 
 ## Calculate the MAXENT score for the 5' splice sites of exons
