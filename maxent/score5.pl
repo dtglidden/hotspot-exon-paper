@@ -28,7 +28,12 @@ while(<>) {
 	print $str."\t";
 	$str = uc($str);
 	if ($usemaxent) {
-	 print sprintf("%.2f",&log2(&scoreconsensus($str)*$me2x5{$seq{&getrest($str)}}))."\n";
+    my $scr = &scoreconsensus($str)*$me2x5{$seq{&getrest($str)}};
+    if ($scr == 0) {
+      print "NA\n";
+    } else {
+      print sprintf("%.2f",&log2($scr))."\n";
+    }
 	}
     }
 }
@@ -84,7 +89,12 @@ sub scoreconsensus{
   $cons2{'C'} = 0.0039;
   $cons2{'G'} = 0.0042;
   $cons2{'T'} = 0.9884;
-  my $addscore = $cons1{$seqa[3]}*$cons2{$seqa[4]}/($bgd{$seqa[3]}*$bgd{$seqa[4]});
+  my $addscore = 0;
+  my $denom = ($bgd{$seqa[3]}*$bgd{$seqa[4]});
+  if ($denom != 0) {
+    $addscore = $cons1{$seqa[3]}*$cons2{$seqa[4]}/$denom;
+  }
+
   return $addscore;
 }
 

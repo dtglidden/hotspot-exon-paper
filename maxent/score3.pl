@@ -14,15 +14,15 @@ while(<>) {
     elsif (/^>/) { #discard comment lines;
 	next;
     }
-    elsif (/[NQWERYUIOPLKJHFDSZXVBM]/) {
-	next;
-    }
     else {
         $_ =~ s/\cM//g; #gets rid of carriage return
 	my $str = $_;
 	print $str."\t";
 	$str = uc($str);
-	if ($usemaxent) {
+        if (/[NQWERYUIOPLKJHFDSZXVBM]/) {
+            print "NA\n";
+	}
+        elsif ($usemaxent) {
 	    print sprintf("%.2f",
 				     &log2(&scoreconsensus($str)*&maxentscore(&getrest($str),\@metables)))."\n";
 	}
