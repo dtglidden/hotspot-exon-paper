@@ -3,6 +3,7 @@ library(GenomicRanges, quietly=T)
 library(BSgenome.Hsapiens.UCSC.hg19, quietly=T)
 library(TxDb.Hsapiens.UCSC.hg19.knownGene)
 library(rPython, quietly=T)
+source("feature_query.R")
 
 ## Calls a MAXENT Perl script on a list of sequences
 ## seq: A character vector of splice site sequences
@@ -160,4 +161,97 @@ ChasinCisDen <- function(exons, getESEs=T, genome=BSgenome.Hsapiens.UCSC.hg19) {
   countSubsV <- Vectorize(countSubstringsOfN, "x", USE.NAMES=F)
   total <- countSubsV(getSeq(genome, exons, as.character=T), 6, elems)
   return(total / exLn)
+}
+
+
+#######################
+## Mutation Features ##
+#######################
+
+## Load a Mutation file (parses text supplied to web form)
+## Output dataframe columns:
+## chr: chromosome name
+## pos: 1-based mutation position
+## strand: DNA strand ("+" or "-")
+## ref: reference allele
+## alt: alternative allele
+ParseMutText <- function(mutFile) {
+  return(read.table(mutFile, sep=" ",
+                    col.names=c("chr", "pos", "strand", "ref", "alt"),
+                    colClasses=c("ref"="character", "alt"="character")))
+}
+
+## Get the exons associated with the mutation data (includes splice sites in the ranges)
+## mutations: A dataframe of mutation info (should be parsed from ParseMutText of ParseMutVcf)
+## exs: A GRanges object of all exons in a genome
+## Returns a GRanges object with the ranges of the exons that overlap the mutations
+## Passes along the mutation info in the metadata columns
+Muts2Exons <- function(mutations, exs=exons(TxDb.Hsapiens.UCSC.hg19.knownGene)) {
+  ## Cover the intronic portion of the 3'SS
+  exsF <- flank(exs, 20)
+
+  ## Resize to cover through the intronic portion of the 5'SS
+  exs <- resize(exsF, width(exs) + 26)
+
+  mutsGr <- GRanges(mutations$chr, IRanges(mutations$pos, width=1), mutations$strand, seqinfo=seqinfo(exs),
+                    ref=mutations$ref, alt=mutations$alt)
+  mutsAndExs <- mergeByOverlaps(mutsGr, exs)
+  mutsAndExs <- mutsAndExs[!duplicated(mutsAndExs$mutsGr), ]
+  goodExons <- mutsAndExs$exs
+  goodExons$pos <- start(mutsAndExs$mutsGr)
+  goodExons$ref <- mutsAndExs$ref
+  goodExons$alt <- mutsAndExs$alt
+  return(goodExons)
+}
+
+## Get sequences with a mutation applied (includes complete 5' and 3'SS)
+## mutExons A GRanges object with exon ranges, and metadata holding mutation info
+## relative to the start of the sequence (1-based)
+GetMutSeq <- function(mutExons, genome=BSgenome.Hsapiens.UCSC.hg19) {
+  wtSeqs <- getSeq(genome, mutExons, as.character=T)
+  exStart <- ifelse(strand(mutExons) == "-", end(mutExons), start(mutExons))
+  mutLoc <- ifelse(strand(mutExons) == "-", exStart - mutExons$pos, mutExons$pos - exStart)
+  mutSeqs <- paste0(substring(wtSeqs, 1, mutLoc),
+                    mutExons$alt,
+                    substring(wtSeqs, mutLoc + 2, nchar(wtSeqs)))
+  return(mutSeqs)
+}
+
+## Gets 5'SS Maxent scores for exons with associated mutations
+## mutations: A dataframe containing mutation info (chr, pos, strand, ref, alt)
+## genome: A BSgenome object to extract the sequence information
+MutScoreSS5 <- function(exs=Muts2Exons(mutations, exons(TxDb.Hsapiens.UCSC.hg19.knownGene)),
+                        genome=BSgenome.Hsapiens.UCSC.hg19) {
+  mutSeqs <- GetMutSeq(exs)
+  seqLens <- nchar(mutSeqs)
+  exs$seq <- substring(mutSeqs, seqLens - 8, seqLens)
+  return(MaxentPerl(exs))
+}
+
+## Gets 3'SS Maxent scores for exons with associated mutations
+## mutations: A dataframe containing mutation info (chr, pos, strand, ref, alt)
+## genome: A BSgenome object to extract the sequence information
+MutScoreSS3 <- function(exs=Muts2Exons(mutations, exons(TxDb.Hsapiens.UCSC.hg19.knownGene)),
+                        genome=BSgenome.Hsapiens.UCSC.hg19) {
+  mutSeqs <- GetMutSeq(exs)
+  exs$seq <- substring(mutSeqs, 1, 23)
+  return(MaxentPerl(exs, script="score3.pl"))
+}
+
+## Gets the absolute difference between mut/wt maxent 5'SS scores
+MutWtDiffSS5 <- function(mutations, exs=exons(TxDb.Hsapiens.UCSC.hg19.knownGene)) {
+  goodExons <- Muts2Exons(mutations, exs)
+  wtScores <- QuerySS5Scores(goodExons$exon_id)
+  mutScores <- MutScoreSS5(goodExons)
+  df <- merge(wtScores, mutScores, by="exon_id")
+  return(data.frame(exon_id=df$exon_id, mwDiffScore=abs(df$score - df$ss5score)))
+}
+
+## Gets the absolute difference between mut/wt maxent 3'SS scores
+MutWtDiffSS3 <- function(mutations, exs=exons(TxDb.Hsapiens.UCSC.hg19.knownGene)) {
+  goodExons <- Muts2Exons(mutations, exs)
+  wtScores <- QuerySS3Scores(goodExons$exon_id)
+  mutScores <- MutScoreSS3(goodExons)
+  df <- merge(wtScores, mutScores, by="exon_id")
+  return(data.frame(exon_id=df$exon_id, mwDiffScore=abs(df$score - df$ss3score)))
 }
