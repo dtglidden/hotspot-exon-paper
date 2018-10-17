@@ -3,7 +3,7 @@ library(GenomicRanges, quietly=T)
 library(BSgenome.Hsapiens.UCSC.hg19, quietly=T)
 library(TxDb.Hsapiens.UCSC.hg19.knownGene)
 library(rPython, quietly=T)
-source("feature_query.R")
+source(file.path("..", "lib", "feature_query.R"))
 
 ## Calls a MAXENT Perl script on a list of sequences
 ## seq: A character vector of splice site sequences
@@ -141,6 +141,44 @@ SSUsage <- function(file, exs) {
   goodSS3Exons$usage <- goodSS3Introns$psi5
 
   return(list(ss5=goodSS5Exons, ss3=goodSS3Exons))
+}
+
+## Gets SS usage data based on another method
+## files: A character vector of paths to splice junctions files
+## exs: A GRanges object of exons to have their splice site usages added
+## cellLine: A string representing the cell line associated with the splicing data
+SSUsage2 <- function(files, exs, cellLine="hek293") {
+  script <- file.path("..", "scripts", "splice_site_usage.py")
+  fileSpec <- sprintf("%s:%s", cellLine, paste(files, collapse=","))
+  outDir <- tempdir()
+  print(outDir)
+  system2("python", args=c(script, fileSpec, outDir))
+  outFiles <- file.path(outDir, dir(outDir))
+  ss5Usage <- read.delim(outFiles[[2]])
+  ss3Usage <- read.delim(outFiles[[1]])
+  ss5UsageGr <- GRanges(seqnames=ss5Usage$Chrom,
+                        ranges=IRanges(start=ss5Usage$Site, end=ss5Usage$Site),
+                        strand=ss5Usage$Strand,
+                        seqinfo=Seqinfo(genome="hg19"),
+                        usage=ss5Usage$Usage)
+  ss3UsageGr <- GRanges(seqnames=ss3Usage$Chrom,
+                        ranges=IRanges(start=ss3Usage$Site, end=ss3Usage$Site),
+                        strand=ss3Usage$Strand,
+                        seqinfo=Seqinfo(genome="hg19"),
+                        usage=ss3Usage$Usage)
+  file.remove(outFiles)
+
+  ## Associate exons with splice site data
+  ss5Merge <- mergeByOverlaps(ss5UsageGr, exs, type="end")
+  ss3Merge <- mergeByOverlaps(ss3UsageGr, exs, type="start")
+
+  ## Pull out GRanges and add usage data to it
+  ss5UsageGr <- ss5Merge$exs
+  ss3UsageGr <- ss3Merge$exs
+  ss5UsageGr$usage <- ss5Merge$usage
+  ss3UsageGr$usage <- ss3Merge$usage
+
+  return(list(ss5=ss5UsageGr, ss3=ss3UsageGr))
 }
 
 ## Tile through a string (window size n) and increment if a substring occurs in an environment (hashtable)
