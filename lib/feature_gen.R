@@ -201,6 +201,30 @@ ChasinCisDen <- function(exons, getESEs=T, genome=BSgenome.Hsapiens.UCSC.hg19) {
   return(total / exLn)
 }
 
+## Calculates MaPSy-style log2 splicing efficiency
+## spliced: Numeric vector of read counts for spliced species
+## unspliced: Numeric vector of read counts for unspliced species
+MapsySplicingEfficiency <- function(spliced, unspliced) {
+  splicedPseudoCounts <- spliced + 1
+  splicedSum <- sum(splicedPseudoCounts)
+  splicedEfficiency <- splicedPseudoCounts / splicedSum
+
+  unsplicedPseudoCounts <- unspliced + 1
+  unsplicedSum <- sum(unsplicedPseudoCounts)
+  unsplicedEfficiency <- unsplicedPseudoCounts / unsplicedSum
+
+  return(log2(splicedEfficiency/unsplicedEfficiency))
+}
+
+## Calculates allelic skew (a 1.5-fold change defines a mutation as an ESM)
+AllelicSkew <- function(ws, wu, ms, mu) {
+  wuPseudo <- wu + 1
+  muPseudo <- mu + 1
+  wsPseudo <- ws + 1
+  msPseudo <- ms + 1
+  return(log2((msPseudo/muPseudo) / (wsPseudo/wuPseudo)))
+}
+
 
 #######################
 ## Mutation Features ##
