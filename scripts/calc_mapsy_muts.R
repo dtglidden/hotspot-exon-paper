@@ -131,13 +131,13 @@ runRF <- function(df) {
 rocs <- lapply(featureSets, runRF)
 
 ggplot() +
-  geom_line(data=rocs[[1]], aes(tpr, fpr, color=sprintf("+MaPSy counts, +SS usage\nAUC: %0.2f", rocs[[1]]$auc[[1]])),
+  geom_line(data=rocs[[1]], aes(tpr, fpr, color="+MaPSy counts, +SS usage"),
             size=2, alpha=0.7) +
-  geom_line(data=rocs[[2]], aes(tpr, fpr, color=sprintf("-MaPSy counts, +SS usage\nAUC: %0.2f", rocs[[2]]$auc[[1]])),
+  geom_line(data=rocs[[2]], aes(tpr, fpr, color="-MaPSy counts, +SS usage"),
             size=2, alpha=0.7) +
-  geom_line(data=rocs[[3]], aes(tpr, fpr, color=sprintf("+MaPSy counts, -SS usage\nAUC: %0.2f", rocs[[3]]$auc[[1]])),
+  geom_line(data=rocs[[3]], aes(tpr, fpr, color="+MaPSy counts, -SS usage"),
             size=2, alpha=0.7) +
-  geom_line(data=rocs[[4]], aes(tpr, fpr, color=sprintf("-MaPSy counts, -SS usage\nAUC: %0.2f", rocs[[4]]$auc[[1]])),
+  geom_line(data=rocs[[4]], aes(tpr, fpr, color="-MaPSy counts, -SS usage"),
             size=2, alpha=0.7) +
   labs(x="False Positive Rate (1-Specificity)",
        y="True Positive Rate (Sensitivity)",
@@ -146,3 +146,24 @@ ggplot() +
   geom_abline(slope=1, linetype="dotted") +
   coord_fixed()
 ggsave(file.path("..", "plots", "mapsy_roc.pdf"))
+
+## Barplot of AUCs
+barDf <- data.frame(
+  FeatureSet=c(
+    "+MaPSy counts, +SS usage",
+    "-MaPSy counts, +SS usage",
+    "+MaPSy counts, -SS usage",
+    "-MaPSy counts, -SS usage"
+  ),
+  AUC=c(
+    rocs[[1]]$auc[[1]],
+    rocs[[2]]$auc[[1]],
+    rocs[[3]]$auc[[1]],
+    rocs[[4]]$auc[[1]]
+  ))
+ggplot(barDf, aes(FeatureSet, AUC)) +
+  geom_bar(stat="identity") +
+  theme(axis.text.x=element_text(angle=45, hjust=1),
+        text=element_text(size=18)) +
+  coord_cartesian(ylim=c(0.8, 0.865))
+ggsave(file.path("..", "plots", "mapsy_auc_bar.pdf"))
