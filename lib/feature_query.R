@@ -26,6 +26,17 @@ AddExonId <- function(gr) {
   return(gr2)
 }
 
+## Convert a dataframe to a GRanges object
+Df2Gr <- function(df, grNames=c("chrom", "strand", "start", "end"), genome="hg19") {
+  gr <- GRanges(seqnames=df$chrom,
+                ranges=IRanges(start=df$start, end=df$end),
+                strand=df$strand,
+                seqinfo=Seqinfo(genome=genome),
+                mcols=df[, colnames(df)[!colnames(df) %in% grNames]])
+  colnames(mcols(gr)) <-  sub("mcols\\.", "", colnames(mcols(gr)))
+  return(gr)
+}
+
 
 ## Gets 5'SS Maxent scores by exon_id
 ## exon_ids: Numeric vector of exon ids
