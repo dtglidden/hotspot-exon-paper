@@ -4,21 +4,11 @@
 ## SS3Usage (psi3), SS5Usage (psi5) with nearest possible flanking exons
 ## SS5 and SS3 Maxent scores
 ## SS5score - flanking SS3score; SS3score - flanking SS5score
+suppressPackageStartupMessages({
 source(file.path("..", "lib", "feature_query.R"))
 source(file.path("..", "lib", "feature_gen.R"))
 library(corrplot)
-
-GetPsis <- function(fIntrons, fExons) {
-  exonsWithPsi5DF <- mergeByOverlaps(fExons, flank(fIntrons, 1))
-  exonsWithPsi5 <- exonsWithPsi5DF$fExons
-  mcols(exonsWithPsi5)$psi5 <- exonsWithPsi5DF$psi5
-  mcols(exonsWithPsi5)$psi3flank <- exonsWithPsi5DF$psi3
-  exonsWithPsi3DF <- mergeByOverlaps(fExons, flank(fIntrons, 1, start=F))
-  exonsWithPsi3 <- exonsWithPsi3DF$fExons
-  mcols(exonsWithPsi3)$psi3 <- exonsWithPsi3DF$psi3
-  mcols(exonsWithPsi3)$psi5flank <- exonsWithPsi3DF$psi5
-  return(merge(exonsWithPsi5, exonsWithPsi3))
-}
+})
 
 exs <- exons(TxDb.Hsapiens.UCSC.hg19.knownGene)
 mutData <- read.delim(file.path("..", "data", "input_ML_complete_table.txt"))
@@ -28,7 +18,9 @@ mapsyExons <- GRanges(seqnames=mutData$chrom_exon,
                       strand=mutData$strand,
                       seqinfo=Seqinfo(genome="hg19"),
                       vivo_ref_spliced=mutData$vivo_ref_spliced,
-                      vivo_ref_unspliced=mutData$vivo_ref_unspliced)
+                      vivo_ref_unspliced=mutData$vivo_ref_unspliced,
+                      vivo_alt_spliced=mutData$vivo_alt_spliced,
+                      vivo_alt_unspliced=mutData$vivo_alt_unspliced)
 ## Remove duplicates because this dataset has entries for each mutation, which may be in the same exon
 ## We only care about the WT exons
 mapsyExons <- mapsyExons[!duplicated(ranges(mapsyExons))]
@@ -38,16 +30,12 @@ ids <- mcols(exs)[subjectHits(ov), "exon_id"]
 mapsyExons <- mapsyExons[queryHits(ov)]
 mapsyExons$exon_id <- ids
 
-## Get WT Splicing Efficiency
-wsCounts <- mcols(mapsyExons)$vivo_ref_spliced + 1 #pseudocounts
-wsSum <- sum(wsCounts)
-wsEff <- wsCounts / wsSum
-
-wuCounts <- mcols(mapsyExons)$vivo_ref_unspliced + 1 #pseudocounts
-wuSum <- sum(wuCounts)
-wuEff <- wuCounts / wuSum
-
-mcols(mapsyExons)$splEff <- log2(wsEff/wuEff)
+mapsyExons$splEff <- MapsySplicingEfficiency(mapsyExons$vivo_ref_spliced, mapsyExons$vivo_ref_unspliced)
+mapsyExons$alSkew <- AllelicSkew(
+  mapsyExons$vivo_ref_spliced,
+  mapsyExons$vivo_ref_unspliced,
+  mapsyExons$vivo_alt_spliced,
+  mapsyExons$vivo_alt_unspliced)
 
 
 exonData <- QueryExonsWithSSUsage()
@@ -62,7 +50,10 @@ mapsyExons$ssUsageAbsDiff <- abs(mapsyExons$ss5usage - mapsyExons$ss3usage)
 
 ## Plot the correlation matrix
 corMat <- cor(as.data.frame(mcols(mapsyExons)[, c(
+  "alSkew",
   "splEff",
+  "vivo_ref_spliced",
+  "vivo_ref_unspliced",
   "ss5score",
   "ss3score",
   "ssScoreSum",
