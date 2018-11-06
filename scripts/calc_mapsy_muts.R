@@ -7,6 +7,7 @@ library(sqldf)
 library(randomForest)
 library(ROCR)
 library(ggplot2)
+library(Boruta)
 })
 
 exsWithSSUsage <- QueryExonsWithSSUsage(as.GRanges=T)
@@ -45,6 +46,7 @@ testIndices <- (splitIdx+1):nRows
 
 allelic_skew <- AllelicSkew(gr$hek_ws, gr$hek_wu, gr$hek_ms, gr$hek_mu)
 affects_splicing <- as.factor(allelic_skew >= log2(1.5)) # p-value?
+gr$affects_splicing <- affects_splicing
 response <- affects_splicing[trainIndices]
 
 ## Variations of the data, so we can compare how some features affect AUC
@@ -61,7 +63,8 @@ mlDf1 <- as.data.frame(mcols(gr))[, c(
   "ss5usage",
   "ss3usage",
   "chasin_ese_density",
-  "chasin_ess_density"
+  "chasin_ess_density",
+  "affects_splicing"
 )]
 
 mlDf2 <- as.data.frame(mcols(gr))[, c(
