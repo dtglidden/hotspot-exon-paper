@@ -7,7 +7,7 @@ library(sqldf)
 library(randomForest)
 library(ROCR)
 library(ggplot2)
-library(Boruta)
+library(RColorBrewer)
 })
 
 exsWithSSUsage <- QueryExonsWithSSUsage(as.GRanges=T)
@@ -63,16 +63,31 @@ mlDf1 <- as.data.frame(mcols(gr))[, c(
   "ss5usage",
   "ss3usage",
   "chasin_ese_density",
-  "chasin_ess_density",
-  "affects_splicing"
+  "chasin_ess_density"
 )]
 
-mlDf2 <- as.data.frame(mcols(gr))[, c(
-#  "hek_ws",
-#  "hek_wu",
-  "mutation_base_change",
+mlDfNoMuts <- as.data.frame(mcols(gr))[, c(
+  "hek_ws",
+  "hek_wu",
+#  "mutation_base_change",
   "w5score",
   "w3score",
+#  "m5score",
+#  "m3score",
+#  "mwdif_5score",
+#  "mwdif_3score",
+  "ss5usage",
+  "ss3usage",
+  "chasin_ese_density",
+  "chasin_ess_density"
+)]
+
+mlDfNoMotifs <- as.data.frame(mcols(gr))[, c(
+  "hek_ws",
+  "hek_wu",
+  "mutation_base_change",
+#  "w5score",
+#  "w3score",
   "m5score",
   "m3score",
   "mwdif_5score",
@@ -83,7 +98,23 @@ mlDf2 <- as.data.frame(mcols(gr))[, c(
   "chasin_ess_density"
 )]
 
-mlDf3 <- as.data.frame(mcols(gr))[, c(
+mlDfNoExons <- as.data.frame(mcols(gr))[, c(
+#  "hek_ws",
+#  "hek_wu",
+  "mutation_base_change",
+  "w5score",
+  "w3score",
+  "m5score",
+  "m3score",
+  "mwdif_5score",
+  "mwdif_3score",
+  "ss5usage",
+  "ss3usage"
+#  "chasin_ese_density",
+#  "chasin_ess_density"
+)]
+
+mlDfNoTranscripts <- as.data.frame(mcols(gr))[, c(
   "hek_ws",
   "hek_wu",
   "mutation_base_change",
@@ -99,23 +130,7 @@ mlDf3 <- as.data.frame(mcols(gr))[, c(
   "chasin_ess_density"
 )]
 
-mlDf4 <- as.data.frame(mcols(gr))[, c(
-#  "hek_ws",
-#  "hek_wu",
-  "mutation_base_change",
-  "w5score",
-  "w3score",
-  "m5score",
-  "m3score",
-  "mwdif_5score",
-  "mwdif_3score",
-#  "ss5usage",
-#  "ss3usage",
-  "chasin_ese_density",
-  "chasin_ess_density"
-)]
-
-featureSets <- list(mlDf1, mlDf2, mlDf3, mlDf4)
+featureSets <- list(mlDf1, mlDfNoMuts, mlDfNoMotifs, mlDfNoExons, mlDfNoTranscripts)
 
 runRF <- function(df) {
   train <- df[trainIndices, ]
@@ -134,13 +149,7 @@ runRF <- function(df) {
 rocs <- lapply(featureSets, runRF)
 
 ggplot() +
-  geom_line(data=rocs[[1]], aes(tpr, fpr, color="+MaPSy counts, +SS usage"),
-            size=2, alpha=0.7) +
-  geom_line(data=rocs[[2]], aes(tpr, fpr, color="-MaPSy counts, +SS usage"),
-            size=2, alpha=0.7) +
-  geom_line(data=rocs[[3]], aes(tpr, fpr, color="+MaPSy counts, -SS usage"),
-            size=2, alpha=0.7) +
-  geom_line(data=rocs[[4]], aes(tpr, fpr, color="-MaPSy counts, -SS usage"),
+  geom_line(data=rocs[[1]], aes(tpr, fpr),
             size=2, alpha=0.7) +
   labs(x="False Positive Rate (1-Specificity)",
        y="True Positive Rate (Sensitivity)",
@@ -148,25 +157,30 @@ ggplot() +
   theme(text=element_text(size=14)) +
   geom_abline(slope=1, linetype="dotted") +
   coord_fixed()
-ggsave(file.path("..", "plots", "mapsy_roc.pdf"))
+ggsave(file.path("..", "plots", "mapsy_roc_single.pdf"))
 
 ## Barplot of AUCs
+featureSet <- c(
+  "All Features",
+  "No Mutation Features",
+  "No Motif Features",
+  "No Exon Features",
+  "No Transcript Features"
+)
+featureSet <- factor(featureSet, levels=featureSet)
 barDf <- data.frame(
-  FeatureSet=c(
-    "+MaPSy counts, +SS usage",
-    "-MaPSy counts, +SS usage",
-    "+MaPSy counts, -SS usage",
-    "-MaPSy counts, -SS usage"
-  ),
+  FeatureSet=featureSet,
   AUC=c(
     rocs[[1]]$auc[[1]],
     rocs[[2]]$auc[[1]],
     rocs[[3]]$auc[[1]],
-    rocs[[4]]$auc[[1]]
+    rocs[[4]]$auc[[1]],
+    rocs[[5]]$auc[[1]]
   ))
+cols <- c("#585858", brewer.pal(4, "Set2"))
 ggplot(barDf, aes(FeatureSet, AUC)) +
-  geom_bar(stat="identity") +
+  geom_bar(stat="identity", fill=cols) +
   theme(axis.text.x=element_text(angle=45, hjust=1),
         text=element_text(size=18)) +
-  coord_cartesian(ylim=c(0.8, 0.865))
-ggsave(file.path("..", "plots", "mapsy_auc_bar.pdf"))
+  coord_cartesian(ylim=c(0.6, 0.865))
+ggsave(file.path("..", "plots", "mapsy_auc_feature_levels.pdf"))
