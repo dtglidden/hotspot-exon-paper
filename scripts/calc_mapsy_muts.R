@@ -5,10 +5,14 @@ suppressPackageStartupMessages({
 source(file.path("..", "lib", "feature_gen.R"))
 library(sqldf)
 library(randomForest)
+library(gbm)
 library(ROCR)
 library(ggplot2)
 library(RColorBrewer)
+library(parallel)
 })
+
+nCores <- detectCores()
 
 exsWithSSUsage <- QueryExonsWithSSUsage(as.GRanges=T)
 
@@ -48,6 +52,7 @@ allelic_skew <- AllelicSkew(gr$hek_ws, gr$hek_wu, gr$hek_ms, gr$hek_mu)
 affects_splicing <- as.factor(allelic_skew >= log2(1.5)) # p-value?
 gr$affects_splicing <- affects_splicing
 response <- affects_splicing[trainIndices]
+responseGBM <- as.integer(response) - 1
 
 ## Variations of the data, so we can compare how some features affect AUC
 mlDf1 <- as.data.frame(mcols(gr))[, c(
@@ -146,6 +151,43 @@ runRF <- function(df) {
   return(data.frame(tpr=myRoc@x.values[[1]], fpr=myRoc@y.values[[1]], auc=auc@y.values[[1]]))
 }
 
+runGBM <- function(df) {
+  train <- df[trainIndices, ]
+  test <- df[testIndices, ]
+  gbmDf <- cbind(responseGBM, train)
+
+  #model <- gbm(responseGBM ~ ., data=gbmDf, distribution="bernoulli", cv.folds=5, n.cores=nCores)
+  ## Most function arguments were taken from the example on the man page for 'gbm'
+  model <- gbm(responseGBM ~ .,             # formula
+               data=gbmDf,                  # dataset
+               #var.monotone=c(0,0,0,0,0,0), # -1: monotone decrease,
+                                            # +1: monotone increase,
+                                            #  0: no monotone restrictions
+               distribution="bernoulli",    # see the help for other choices
+               n.trees=1000,                # number of trees
+               shrinkage=0.05,              # shrinkage or learning rate,
+                                            # 0.001 to 0.1 usually work
+               interaction.depth=3,         # 1: additive model, 2: two-way interactions, etc.
+               bag.fraction = 0.5,          # subsampling fraction, 0.5 is probably best
+               #train.fraction = 0.5,        # fraction of data for training,
+                                            # first train.fraction*N used for training
+               n.minobsinnode = 10,         # minimum total weight needed in each node
+               cv.folds = 3,                # do 3-fold cross-validation
+               keep.data=F,                 # don't keep a copy of the dataset with the object
+               verbose=F,                   # don't print out progress
+               n.cores=nCores)
+  best.iter <- gbm.perf(model, method="cv", plot.it=F)
+  ## 'response' type scales values to the 0-1 interval
+  ## (i.e. the probability of affecting splicing or not)
+  predNums <- predict(model, test, n.trees=best.iter, type="response")
+
+  realityLabels <- affects_splicing[testIndices]
+  rocrPred <- prediction(predNums, realityLabels)
+  auc <- performance(rocrPred, "auc")
+  myRoc <- performance(rocrPred, "tpr", "fpr")
+  return(data.frame(tpr=myRoc@x.values[[1]], fpr=myRoc@y.values[[1]], auc=auc@y.values[[1]]))
+}
+
 rocs <- lapply(featureSets, runRF)
 
 ggplot() +
@@ -182,5 +224,5 @@ ggplot(barDf, aes(FeatureSet, AUC)) +
   geom_bar(stat="identity", fill=cols) +
   theme(axis.text.x=element_text(angle=45, hjust=1),
         text=element_text(size=18)) +
-  coord_cartesian(ylim=c(0.6, 0.865))
-ggsave(file.path("..", "plots", "mapsy_auc_feature_levels.pdf"))
+  coord_cartesian(ylim=c(0.6, 0.9))
+ggsave(file.path("..", "plots", "mapsy_auc_feature_levels_gbm.pdf"))

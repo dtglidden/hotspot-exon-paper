@@ -49,27 +49,41 @@ mapsyExons$ssUsageAbsDiff <- abs(mapsyExons$ss5usage - mapsyExons$ss3usage)
 
 
 ## Plot the correlation matrix
-corMat <- cor(as.data.frame(mcols(mapsyExons)[, c(
-  "alSkew",
-  "splEff",
-  "vivo_ref_spliced",
-  "vivo_ref_unspliced",
-  "ss5score",
-  "ss3score",
-  "ssScoreSum",
-  "ssScoreDiff",
-  "ssScoreAbsDiff",
-  "ss5usage",
-  "ss3usage",
-  "ssUsageSum",
-  "ssUsageDiff",
-  "ssUsageAbsDiff",
-  "chasin_ese_density",
-  "chasin_ess_density"
-)]))
+featureNames <- c(
+  "Allelic Skew"="alSkew",
+  "Splicing Efficiency"="splEff",
+  "WT Spliced Counts"="vivo_ref_spliced",
+  "WT Unspliced Counts"="vivo_ref_unspliced",
+  "5'SS Maxent Score"="ss5score",
+  "3'SS Maxent Score"="ss3score",
+  "Maxent Score Sum"="ssScoreSum",
+  "Maxent Score Diff"="ssScoreDiff",
+  "Maxent Score Abs Diff"="ssScoreAbsDiff",
+  "5'SS Usage"="ss5usage",
+  "3'SS Usage"="ss3usage",
+  "SS Usage Sum"="ssUsageSum",
+  "SS Usage Diff"="ssUsageDiff",
+  "SS Usage Abs Diff"="ssUsageAbsDiff",
+  "ESE Density"="chasin_ese_density",
+  "ESS Density"="chasin_ess_density"
+)
 
-colPal <- colorRampPalette(rev(c("#7F0000", "red", "#FF7F00", "yellow", "white",
-        "cyan", "#007FFF", "blue", "#00007F")))
-pdf(file.path("..", "lib", "feature_cor.pdf"))
-corrplot(corMat, method="ellipse", col=colPal(200))
+corMat <- cor(as.data.frame(mcols(mapsyExons)[, featureNames]))
+rownames(corMat) <- names(featureNames)
+colnames(corMat) <- names(featureNames)
+
+colPal <- colorRampPalette(c(
+  "#00007F",
+  "blue",
+  "#007FFF",
+  "cyan",
+  "white",
+  "yellow",
+  "#FF7F00",
+  "red",
+  "#7F0000"
+))
+
+pdf(file.path("..", "plots", "feature_cor.pdf"))
+corrplot(corMat, method="color", col=colPal(200))
 dev.off()
