@@ -270,10 +270,19 @@ Muts2Exons <- function(mutations, exs=exons(TxDb.Hsapiens.UCSC.hg19.knownGene)) 
 ## Get sequences with a mutation applied (includes complete 5' and 3'SS)
 ## mutExons A GRanges object with exon ranges, and metadata holding mutation info
 ## relative to the start of the sequence (1-based)
-GetMutSeq <- function(mutExons, genome=BSgenome.Hsapiens.UCSC.hg19) {
+GetMutSeq <- function(mutExons, genome=BSgenome.Hsapiens.UCSC.hg19, hasSpliceSites=T, relativePos=F) {
+  if (!hasSpliceSites) {
+    start(mutExons) <- ifelse(strand(mutExons) == "+", start(mutExons) - 20, start(mutExons) - 6)
+    end(mutExons) <- ifelse(strand(mutExons) == "+", end(mutExons) + 6, end(mutExons) + 20)
+    mutExons$pos <- mutExons$pos + 20
+  }
   wtSeqs <- getSeq(genome, mutExons, as.character=T)
   exStart <- ifelse(strand(mutExons) == "-", end(mutExons), start(mutExons))
-  mutLoc <- ifelse(strand(mutExons) == "-", exStart - mutExons$pos, mutExons$pos - exStart)
+  if (relativePos) {
+    mutLoc <- mutExons$pos
+  } else {
+    mutLoc <- ifelse(strand(mutExons) == "-", exStart - mutExons$pos, mutExons$pos - exStart)
+  }
   mutSeqs <- paste0(substring(wtSeqs, 1, mutLoc),
                     mutExons$alt,
                     substring(wtSeqs, mutLoc + 2, nchar(wtSeqs)))
@@ -322,46 +331,46 @@ MutWtDiffSS3 <- function(mutations, exs=exons(TxDb.Hsapiens.UCSC.hg19.knownGene)
 ## Calculate all mutation features for a list of mutations
 ## muts: A dataframe of mutation info in the same form as the output of ParseMutText
 ## Only returns mutations in exons that have splice site usage data
-CalcMutFeatures <- function(muts, genome=BSgenome.Hsapiens.UCSC.hg19) {
-  exs <- Muts2Exons(muts)
-  exsWithSSUsage <- QueryExonsWithSSUsage(as.GRanges=T)
+CalcMutFeatures <- function(exs, genome=BSgenome.Hsapiens.UCSC.hg19) {
+#  exs <- Muts2Exons(muts)
+#  exsWithSSUsage <- QueryExonsWithSSUsage(as.GRanges=T)
 
   ## Have to merge dataframes via sqldf because the regular merge function affects the ordering.
   ## This way, the exon IDs are in the same order as those in 'gr'
-  grMcols <- as.data.frame(mcols(exs))
-  usageMcols <- as.data.frame(mcols(exsWithSSUsage))
-  mcols(exs) <- sqldf(paste("SELECT grMcols.*, ss5usage, ss3usage, chasin_ese_density, chasin_ess_density",
-                            "FROM grMcols LEFT JOIN usageMcols",
-                            "ON grMcols.exon_id=usageMcols.exon_id;"))
-  exs <- exs[complete.cases(mcols(exs))]
+#  grMcols <- as.data.frame(mcols(exs))
+#  usageMcols <- as.data.frame(mcols(exsWithSSUsage))
+#  mcols(exs) <- sqldf(paste("SELECT grMcols.*, ss5usage, ss3usage, chasin_ese_density, chasin_ess_density",
+#                            "FROM grMcols LEFT JOIN usageMcols",
+#                            "ON grMcols.exon_id=usageMcols.exon_id;"))
+#  exs <- exs[complete.cases(mcols(exs))]
 
   ## The actual mutation
   exs$mutation_base_change <- paste0(exs$ref, "->", exs$alt)
 
   ## Get wt seq and scores so we can generate the mutant ones
 #  exs$wtSeq <- Rle(getSeq(genome, exs, as.character=T))
-  wtSS5Scores <- QuerySS5Scores(exs$exon_id)
-  wtSS3Scores <- QuerySS3Scores(exs$exon_id)
+#  wtSS5Scores <- QuerySS5Scores(exs$exon_id)
+#  wtSS3Scores <- QuerySS3Scores(exs$exon_id)
 
   ## Get mut sequence and scores
-  mutSeqs <- GetMutSeq(exs)
+  mutSeqs <- GetMutSeq(exs, hasSpliceSites=F, relativePos=T)
   ## 5'SS
   seqLens <- nchar(mutSeqs)
   exs$seq <- substring(mutSeqs, seqLens - 8, seqLens)
-  mutSS5Scores <- MaxentPerl(exs)
+  system.time(mutSS5Scores <- MaxentPerl(exs))
   ## 3'SS
   exs$seq <- substring(mutSeqs, 1, 23)
-  mutSS3Scores <- MaxentPerl(exs, script="score3.pl")
+  system.time(mutSS3Scores <- MaxentPerl(exs, script="score3.pl"))
 
   exs$seq <- NULL
 
-  dfSS5 <- merge(wtSS5Scores, mutSS5Scores, by="exon_id")
-  dfSS3 <- merge(wtSS3Scores, mutSS3Scores, by="exon_id")
-  exs$w5score <- dfSS5$score
-  exs$m5score <- dfSS5$ss5score
+#  dfSS5 <- merge(wtSS5Scores, mutSS5Scores, by="exon_id")
+#  dfSS3 <- merge(wtSS3Scores, mutSS3Scores, by="exon_id")
+  exs$w5score <- exs$ss5score # for ML
+  exs$m5score <- mutSS5Scores$score
   exs$mwdif_5score <- exs$w5score - exs$m5score
-  exs$w3score <- dfSS3$score
-  exs$m3score <- dfSS3$ss3score
+  exs$w3score <- exs$ss3score # for ML
+  exs$m3score <- mutSS3Scores$score
   exs$mwdif_3score <- exs$w3score - exs$m3score
 
   return(exs)

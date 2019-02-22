@@ -1,5 +1,7 @@
 suppressPackageStartupMessages({
   library(GenomicRanges)
+  library(sqldf)
+  source(file.path("..", "lib", "feature_query.R"))
 })
 
 ## Grow/shrink both sides of a GRanges object by specified amounts (can be negative)
@@ -18,3 +20,14 @@ AlterBothSides <- function(gr, left, right) {
 }
 
 AddSpliceSites <- function(gr) AlterBothSides(gr, 20, 6)
+
+## Associate variants with exons (only those that have splice site usage)
+## gr: a GRanges object of imported variants
+AssociateVars <- function(gr, exsWithSSUsage=QueryExonsWithSSUsage(as.GRanges=T)) {
+  grMcols <- as.data.frame(mcols(gr))
+  usageMcols <- as.data.frame(mcols(exsWithSSUsage))
+  mcols(gr) <- sqldf(paste("SELECT grMcols.*, ss5usage, ss3usage, chasin_ese_density, chasin_ess_density",
+                           "FROM grMcols LEFT JOIN usageMcols",
+                           "ON grMcols.exon_id=usageMcols.exon_id;"))
+  gr <- gr[complete.cases(mcols(gr))]
+}
