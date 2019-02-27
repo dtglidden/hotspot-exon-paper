@@ -196,10 +196,16 @@ ggplot() +
   labs(x="False Positive Rate (1-Specificity)",
        y="True Positive Rate (Sensitivity)",
        color="Feature Sets") +
-  theme(text=element_text(size=14)) +
+  theme(axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        text=element_text(size=24),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.background=element_blank(),
+        panel.border=element_rect(fill=NA)) +
   geom_abline(slope=1, linetype="dotted") +
   coord_fixed()
-ggsave(file.path("..", "plots", "mapsy_roc_single.pdf"))
+ggsave(file.path("..", "plots", "mapsy_roc_new_rf.pdf"))
 
 ## Barplot of AUCs
 featureSet <- c(
@@ -221,8 +227,12 @@ barDf <- data.frame(
   ))
 cols <- c("#585858", brewer.pal(4, "Set2"))
 ggplot(barDf, aes(FeatureSet, AUC)) +
-  geom_bar(stat="identity", fill=cols) +
+  geom_bar(stat="identity", fill=cols, color="black") +
   theme(axis.text.x=element_text(angle=45, hjust=1),
-        text=element_text(size=18)) +
+        text=element_text(size=24),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.background=element_blank(),
+        panel.border=element_rect(fill=NA)) +
   coord_cartesian(ylim=c(0.6, 0.9))
-ggsave(file.path("..", "plots", "mapsy_auc_feature_levels_gbm.pdf"))
+ggsave(file.path("..", "plots", "mapsy_auc_feature_levels_rf_new.pdf"))
