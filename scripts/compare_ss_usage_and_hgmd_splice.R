@@ -62,15 +62,23 @@ dfSummary$grp <- factor(dfSummary$grp, levels=as.character(dfSummary$grp))
 halfNRow <- nrow(dfSummary) / 2
 dfSummary$ss <- factor(c(rep("5'SS", halfNRow), rep("3'SS", halfNRow)), levels=c("5'SS", "3'SS"))
 ggplot(dfSummary, aes(grp, meanUsage, fill=ss)) +
-  geom_col() +
+  geom_col(color="black") +
   geom_errorbar(aes(ymin=meanUsage-seUsage, ymax=meanUsage+seUsage), width=0.2) +
   coord_cartesian(ylim=c(0.8, 1)) +
   geom_signif(comparisons=list(c("Sensitive 5'SS", "Resistant 5'SS"),
                                c("Sensitive 3'SS", "Resistant 3'SS")),
-              annotation="***") +
+              annotation="***",
+              textsize=7,
+              margin_top=0.2) +
   labs(x="", y="Splice Site Usage (%)", fill="Splice Site") +
-  theme(axis.text.x=element_text(angle=45, hjust=1),
-        text=element_text(size=18))
+  theme(axis.text.x=element_text(color="black", angle=45, hjust=1),
+        axis.text.y=element_text(color="black"),
+        axis.title.y=element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        text=element_text(size=24),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.background=element_blank(),
+        panel.border=element_rect(fill=NA))
 ggsave(file.path("..", "plots", "usagePlotHGMD.pdf"))
 
 ## RBP plot
@@ -81,15 +89,23 @@ dfSummary$grp <- factor(dfSummary$grp, levels=as.character(unique(dfSummary$grp)
 halfNRow <- nrow(dfSummary) / 2
 dfSummary$ss <- factor(c(rep("5'SS", halfNRow), rep("3'SS", halfNRow)), levels=c("5'SS", "3'SS"))
 ggplot(dfSummary, aes(grp, meanUsage, fill=ss)) +
-  geom_col() +
+  geom_col(color="black") +
   geom_errorbar(aes(ymin=meanUsage-seUsage, ymax=meanUsage+seUsage), width=0.2) +
   coord_cartesian(ylim=c(0.7, 0.95)) +
   geom_signif(comparisons=list(c("Resistant 5'SS", "Sensitive 5'SS"),
                                c("Resistant 3'SS", "Sensitive 3'SS")),
-              annotation="***") +
+              annotation="***",
+              textsize=7,
+              margin_top=0.05) +
   labs(x="", y="Splice Site Usage (%)", fill="Splice Site") +
-  theme(axis.text.x=element_text(angle=45, hjust=1),
-        text=element_text(size=18))
+  theme(axis.text.x=element_text(color="black", angle=45, hjust=1),
+        axis.text.y=element_text(color="black"),
+        axis.title.y=element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)),
+        text=element_text(size=24),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.background=element_blank(),
+        panel.border=element_rect(fill=NA))
 ggsave(file.path("..", "plots", "usagePlotRBP.pdf"))
 
 ## Incorporate amiloride usage data
@@ -112,13 +128,21 @@ dfSummary$grp <- factor(dfSummary$grp, levels=as.character(unique(dfSummary$grp)
 halfNRow <- nrow(dfSummary) / 2
 dfSummary$ss <- factor(c(rep("5'SS", halfNRow), rep("3'SS", halfNRow)), levels=c("5'SS", "3'SS"))
 ggplot(dfSummary, aes(grp, meanUsage, fill=ss)) +
-  geom_col() +
+  geom_col(color="black") +
   geom_errorbar(aes(ymin=meanUsage-seUsage, ymax=meanUsage+seUsage), width=0.2) +
   coord_cartesian(ylim=c(0.7, 0.95)) +
   geom_signif(comparisons=list(c("Resistant 5'SS", "Sensitive 5'SS"),
                                c("Resistant 3'SS", "Sensitive 3'SS")),
-              annotation="***") +
+              annotation="***",
+              textsize=7,
+              margin_top=0.2) +
   labs(x="", y="Splice Site Usage (%)", fill="Splice Site") +
-  theme(axis.text.x=element_text(angle=45, hjust=1),
-        text=element_text(size=18))
+  theme(axis.text.x=element_text(color="black", angle=45, hjust=1),
+        axis.text.y=element_text(color="black"),
+        axis.title.y=element_text(margin=margin(t=0, r=20, b=0, l=0)),
+        text=element_text(size=24),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.background=element_blank(),
+        panel.border=element_rect(fill=NA))
 ggsave(file.path("..", "plots", "usagePlotAmilo.pdf"))
