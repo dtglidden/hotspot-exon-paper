@@ -64,7 +64,7 @@ dfSummary$ss <- factor(c(rep("5'SS", halfNRow), rep("3'SS", halfNRow)), levels=c
 ggplot(dfSummary, aes(grp, meanUsage, fill=ss)) +
   geom_col(color="black") +
   geom_errorbar(aes(ymin=meanUsage-seUsage, ymax=meanUsage+seUsage), width=0.2) +
-  coord_cartesian(ylim=c(0.8, 1)) +
+  coord_cartesian(ylim=c(0.7, 1)) +
   geom_signif(comparisons=list(c("Sensitive 5'SS", "Resistant 5'SS"),
                                c("Sensitive 3'SS", "Resistant 3'SS")),
               annotation="***",
@@ -91,7 +91,7 @@ dfSummary$ss <- factor(c(rep("5'SS", halfNRow), rep("3'SS", halfNRow)), levels=c
 ggplot(dfSummary, aes(grp, meanUsage, fill=ss)) +
   geom_col(color="black") +
   geom_errorbar(aes(ymin=meanUsage-seUsage, ymax=meanUsage+seUsage), width=0.2) +
-  coord_cartesian(ylim=c(0.7, 0.95)) +
+  coord_cartesian(ylim=c(0.7, 1)) +
   geom_signif(comparisons=list(c("Resistant 5'SS", "Sensitive 5'SS"),
                                c("Resistant 3'SS", "Sensitive 3'SS")),
               annotation="***",
@@ -130,7 +130,7 @@ dfSummary$ss <- factor(c(rep("5'SS", halfNRow), rep("3'SS", halfNRow)), levels=c
 ggplot(dfSummary, aes(grp, meanUsage, fill=ss)) +
   geom_col(color="black") +
   geom_errorbar(aes(ymin=meanUsage-seUsage, ymax=meanUsage+seUsage), width=0.2) +
-  coord_cartesian(ylim=c(0.7, 0.95)) +
+  coord_cartesian(ylim=c(0.7, 1)) +
   geom_signif(comparisons=list(c("Resistant 5'SS", "Sensitive 5'SS"),
                                c("Resistant 3'SS", "Sensitive 3'SS")),
               annotation="***",
