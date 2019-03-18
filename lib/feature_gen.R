@@ -148,12 +148,12 @@ SSUsage <- function(file, exs) {
 ## files: A character vector of paths to splice junctions files
 ## exs: A GRanges object of exons to have their splice site usages added
 ## cellLine: A string representing the cell line associated with the splicing data
-SSUsage2 <- function(files, exs, cellLine="hek293") {
+SSUsage2 <- function(files, exs, cellLine="hek293", gtf=file.path("..", "data", "hg19.gtf")) {
   script <- file.path("..", "scripts", "splice_site_usage.py")
   fileSpec <- sprintf("%s:%s", cellLine, paste(files, collapse=","))
   outDir <- tempdir()
   print(outDir)
-  system2("python", args=c(script, fileSpec, outDir))
+  system2("python", args=c(script, gtf, fileSpec, outDir))
   outFiles <- file.path(outDir, dir(outDir))
   ss5Usage <- read.delim(outFiles[[2]])
   ss3Usage <- read.delim(outFiles[[1]])
