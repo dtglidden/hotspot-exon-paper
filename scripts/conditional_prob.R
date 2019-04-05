@@ -2,7 +2,10 @@
 suppressPackageStartupMessages({
   library(ggplot2)
   library(grid)
+  library(RColorBrewer)
 })
+
+set.seed(1)
 
 df <- read.delim(file.path("..", "data", "input_ML_complete_table.txt"))
 
@@ -38,62 +41,65 @@ dfByWt <- lapply(unique(df$ref), function(x) df[df$ref == x, c("alt", "vivo_rati
 names(dfByWt) <- unique(df$ref)
 
 ## Randomly sample 2 items from each group
-samps <- lapply(1:length(dfByWt), function(i) sample(dfByWt[[i]]$bin, 2))
+samps <- lapply(1:length(dfByWt), function(i) dfByWt[[i]][sample(nrow(dfByWt[[i]]), 2), ])
 
-breaks <- c(0.5, 1.5, 2.5, 3.5, 4.5)
-ones <- hist(sapply(Filter(function(x) x[[1]]==1, samps), function(x) x[[2]]),
-             breaks=breaks,
-             plot=F)
-ones <- ones$counts / sum(ones$counts)
-twos <- hist(sapply(Filter(function(x) x[[1]]==2, samps), function(x) x[[2]]),
-             breaks=breaks,
-             plot=F)
-twos <- twos$counts / sum(twos$counts)
-threes <- hist(sapply(Filter(function(x) x[[1]]==3, samps), function(x) x[[2]]),
-               breaks=breaks,
-               plot=F)
-threes <- threes$counts / sum(threes$counts)
-fours <- hist(sapply(Filter(function(x) x[[1]]==4, samps), function(x) x[[2]]),
-              breaks=breaks,
-              plot=F)
-fours <- fours$counts / sum(fours$counts)
+firsts <- sapply(samps, function(x) x[1, "vivo_ratio"])
 
-p1 <- ggplot(data.frame(x=1:4, ones), aes(x, ones)) +
-  geom_col(width=1, color="black") +
-  ylab("Probability") +
-  xlab("Quartile of SNV 2") +
-  ylim(NA, 0.5) +
-  theme(text=element_text(size=12, color="black"),
+ones   <- sapply(Filter(function(x) x[1, "bin"]==1, samps), function(x) x[2, "vivo_ratio"])
+twos   <- sapply(Filter(function(x) x[1, "bin"]==2, samps), function(x) x[2, "vivo_ratio"])
+threes <- sapply(Filter(function(x) x[1, "bin"]==3, samps), function(x) x[2, "vivo_ratio"])
+fours  <- sapply(Filter(function(x) x[1, "bin"]==4, samps), function(x) x[2, "vivo_ratio"])
+
+allSnv1 <- sapply(samps, function(x) x[1, "vivo_ratio"])
+allSnv1Sum <- summary(allSnv1)
+alls <- c(ones, twos, threes, fours, allSnv1)
+xAxis <- seq(floor(min(alls)), ceiling(max(alls)), by=0.5)
+
+colorPal <- brewer.pal(4, "Set3")
+colors <- sapply(xAxis, function(x) {
+  if (x < allSnv1Sum["1st Qu."]) colorPal[[1]]
+  else if (x < allSnv1Sum["Median"]) colorPal[[2]]
+  else if (x < allSnv1Sum["3rd Qu."]) colorPal[[3]]
+  else colorPal[[4]]
+})
+
+myYlim <- c(0, 125)
+p1 <- ggplot(data.frame(ones), aes(ones)) +
+  geom_histogram(breaks=xAxis, color=NA, fill="#8DD3C7") +
+  ylab("Frequency") +
+  xlab("M/W Ratio of SNV 2") +
+  ylim(myYlim) +
+  theme(text=element_text(size=8, color="black"),
         panel.grid.major=element_blank(),
         panel.grid.minor=element_blank(),
         panel.background=element_blank(),
         panel.border=element_rect(fill=NA))
-p2 <- ggplot(data.frame(x=1:4, twos), aes(x, twos)) +
-  geom_col(width=1, color="black") +
-  ylab("Probability") +
-  xlab("Quartile of SNV 2") +
-  ylim(NA, 0.5) +
-  theme(text=element_text(size=12, color="black"),
+p2 <- ggplot(data.frame(twos), aes(twos)) +
+  geom_histogram(breaks=xAxis, color=NA, fill="#FFFFB3") +
+  ylab("Frequency") +
+  xlab("M/W Ratio of SNV 2") +
+  ylim(myYlim) +
+  theme(text=element_text(size=8, color="black"),
         panel.grid.major=element_blank(),
         panel.grid.minor=element_blank(),
         panel.background=element_blank(),
         panel.border=element_rect(fill=NA))
-p3 <- ggplot(data.frame(x=1:4, threes), aes(x, threes)) +
-  geom_col(width=1, color="black") +
-  ylab("Probability") +
-  xlab("Quartile of SNV 2") +
-  ylim(NA, 0.5) +
-  theme(text=element_text(size=12, color="black"),
+p3 <- ggplot(data.frame(threes), aes(threes)) +
+  geom_histogram(breaks=xAxis, color=NA, fill="#BEBADA") +
+  ylab("Frequency") +
+  xlab("M/W Ratio of SNV 2") +
+  ylim(myYlim) +
+  theme(text=element_text(size=8, color="black"),
         panel.grid.major=element_blank(),
         panel.grid.minor=element_blank(),
         panel.background=element_blank(),
         panel.border=element_rect(fill=NA))
-p4 <- ggplot(data.frame(x=1:4, fours), aes(x, fours)) +
-  geom_col(width=1, color="black") +
-  ylab("Probability") +
-  xlab("Quartile of SNV 2") +
-  ylim(NA, 0.5) +
-  theme(text=element_text(size=12, color="black"),
+p4 <- ggplot(data.frame(fours), aes(fours)) +
+  geom_histogram(breaks=xAxis, color=NA, fill="#FB8072") +
+  ylab("Frequency") +
+  xlab("M/W Ratio of SNV 2") +
+  ylim(myYlim) +
+  theme(text=element_text(size=8, color="black"),
         panel.grid.major=element_blank(),
         panel.grid.minor=element_blank(),
         panel.background=element_blank(),
@@ -103,3 +109,28 @@ pdf(file.path("..", "plots", "conditional_prob_ggplot_hist.pdf"), height=2)
 grid.newpage()
 grid.draw(cbind(ggplotGrob(p1), ggplotGrob(p2), ggplotGrob(p3), ggplotGrob(p4), size="last"))
 dev.off()
+
+
+
+## Plot the overall distribution of SNV1 to compare against the subdivisions
+ggplot(data.frame(allSnv1), aes(allSnv1)) +
+  geom_histogram(breaks=xAxis, color=NA, fill=colors[1:length(xAxis)-1]) +
+  ylab("Frequency") +
+  xlab("M/W Ratio of SNV 1") +
+  theme(text=element_text(size=8, color="black"),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.background=element_blank(),
+        panel.border=element_rect(fill=NA))
+ggsave(file.path("..", "plots", "conditional_prob_combined.pdf"), width=2, height=2)
+
+# Boxplot to go underneath it
+ggplot(data.frame(x="SNV1", allSnv1), aes(x, allSnv1)) +
+  geom_boxplot(outlier.color=NA) +
+  coord_flip() +
+  theme(text=element_text(size=8, color="black"),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.background=element_blank(),
+        panel.border=element_rect(fill=NA))
+ggsave(file.path("..", "plots", "conditional_prob_boxplot.pdf"), width=2, height=2)
