@@ -63,11 +63,14 @@ colors <- sapply(xAxis, function(x) {
   else colorPal[[4]]
 })
 
-myYlim <- c(0, 125)
+myXlim <- c(-5, 5)
+myYlim <- c(0, 400)
 p1 <- ggplot(data.frame(ones), aes(ones)) +
+  geom_histogram(data=data.frame(allSnv1), mapping=aes(allSnv1), breaks=xAxis, color=NA, fill="gray35") +
   geom_histogram(breaks=xAxis, color=NA, fill="#8DD3C7") +
   ylab("Frequency") +
-  xlab("M/W Ratio of SNV 2") +
+  xlab("M/W Ratio") +
+  xlim(myXlim) +
   ylim(myYlim) +
   theme(text=element_text(size=8, color="black"),
         panel.grid.major=element_blank(),
@@ -75,9 +78,11 @@ p1 <- ggplot(data.frame(ones), aes(ones)) +
         panel.background=element_blank(),
         panel.border=element_rect(fill=NA))
 p2 <- ggplot(data.frame(twos), aes(twos)) +
+  geom_histogram(data=data.frame(allSnv1), mapping=aes(allSnv1), breaks=xAxis, color=NA, fill="gray35") +
   geom_histogram(breaks=xAxis, color=NA, fill="#FFFFB3") +
   ylab("Frequency") +
-  xlab("M/W Ratio of SNV 2") +
+  xlab("M/W Ratio") +
+  xlim(myXlim) +
   ylim(myYlim) +
   theme(text=element_text(size=8, color="black"),
         panel.grid.major=element_blank(),
@@ -85,9 +90,11 @@ p2 <- ggplot(data.frame(twos), aes(twos)) +
         panel.background=element_blank(),
         panel.border=element_rect(fill=NA))
 p3 <- ggplot(data.frame(threes), aes(threes)) +
+  geom_histogram(data=data.frame(allSnv1), mapping=aes(allSnv1), breaks=xAxis, color=NA, fill="gray35") +
   geom_histogram(breaks=xAxis, color=NA, fill="#BEBADA") +
   ylab("Frequency") +
-  xlab("M/W Ratio of SNV 2") +
+  xlab("M/W Ratio") +
+  xlim(myXlim) +
   ylim(myYlim) +
   theme(text=element_text(size=8, color="black"),
         panel.grid.major=element_blank(),
@@ -95,9 +102,11 @@ p3 <- ggplot(data.frame(threes), aes(threes)) +
         panel.background=element_blank(),
         panel.border=element_rect(fill=NA))
 p4 <- ggplot(data.frame(fours), aes(fours)) +
+  geom_histogram(data=data.frame(allSnv1), mapping=aes(allSnv1), breaks=xAxis, color=NA, fill="gray35") +
   geom_histogram(breaks=xAxis, color=NA, fill="#FB8072") +
   ylab("Frequency") +
-  xlab("M/W Ratio of SNV 2") +
+  xlab("M/W Ratio") +
+  xlim(myXlim) +
   ylim(myYlim) +
   theme(text=element_text(size=8, color="black"),
         panel.grid.major=element_blank(),
@@ -117,20 +126,10 @@ ggplot(data.frame(allSnv1), aes(allSnv1)) +
   geom_histogram(breaks=xAxis, color=NA, fill=colors[1:length(xAxis)-1]) +
   ylab("Frequency") +
   xlab("M/W Ratio of SNV 1") +
+  ylim(myYlim) +
   theme(text=element_text(size=8, color="black"),
         panel.grid.major=element_blank(),
         panel.grid.minor=element_blank(),
         panel.background=element_blank(),
         panel.border=element_rect(fill=NA))
 ggsave(file.path("..", "plots", "conditional_prob_combined.pdf"), width=2, height=2)
-
-# Boxplot to go underneath it
-ggplot(data.frame(x="SNV1", allSnv1), aes(x, allSnv1)) +
-  geom_boxplot(outlier.color=NA) +
-  coord_flip() +
-  theme(text=element_text(size=8, color="black"),
-        panel.grid.major=element_blank(),
-        panel.grid.minor=element_blank(),
-        panel.background=element_blank(),
-        panel.border=element_rect(fill=NA))
-ggsave(file.path("..", "plots", "conditional_prob_boxplot.pdf"), width=2, height=2)
