@@ -65,6 +65,23 @@ colors <- sapply(xAxis, function(x) {
 
 myXlim <- c(-5, 5)
 myYlim <- c(0, 400)
+
+SE <- function(x) sd(x) / sqrt(length(x))
+barNames <- 1:4
+barHeights <- c(mean(ones), mean(twos), mean(threes), mean(fours))
+barSE <- sapply(list(ones, twos, threes, fours), SE)
+barDf <- data.frame(quartile=barNames,
+                    ratio=barHeights,
+                    se=barSE)
+ggplot(barDf, aes(quartile, ratio)) +
+  geom_col(color="black") +
+  geom_errorbar(aes(ymin=ratio-se, ymax=ratio+se),
+                width=0.2) +
+  labs(x="Quartile of SNV 1",
+       y="Average M/W Ratio of SNV 2") +
+  theme_classic() +
+  theme(text=element_text(size=24))
+ggsave(file.path("..", "plots", "conditional_prob_bar.pdf"))
 p1 <- ggplot(data.frame(ones), aes(ones)) +
   geom_histogram(data=data.frame(allSnv1), mapping=aes(allSnv1), breaks=xAxis, color=NA, fill="gray35") +
   geom_histogram(breaks=xAxis, color=NA, fill="#8DD3C7") +
@@ -123,13 +140,10 @@ dev.off()
 
 ## Plot the overall distribution of SNV1 to compare against the subdivisions
 ggplot(data.frame(allSnv1), aes(allSnv1)) +
-  geom_histogram(breaks=xAxis, color=NA, fill=colors[1:length(xAxis)-1]) +
+  geom_histogram(breaks=xAxis, color=NA) +
   ylab("Frequency") +
   xlab("M/W Ratio of SNV 1") +
-  ylim(myYlim) +
-  theme(text=element_text(size=8, color="black"),
-        panel.grid.major=element_blank(),
-        panel.grid.minor=element_blank(),
-        panel.background=element_blank(),
-        panel.border=element_rect(fill=NA))
-ggsave(file.path("..", "plots", "conditional_prob_combined.pdf"), width=2, height=2)
+#  ylim(myYlim) +
+  theme_classic() +
+  theme(text=element_text(size=24))
+ggsave(file.path("..", "plots", "conditional_prob_snv1.pdf"))

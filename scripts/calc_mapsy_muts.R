@@ -13,6 +13,7 @@ library(parallel)
 })
 
 nCores <- detectCores()
+set.seed(1)
 
 exsWithSSUsage <- QueryExonsWithSSUsage(as.GRanges=T)
 
@@ -196,13 +197,10 @@ ggplot() +
   labs(x="False Positive Rate (1-Specificity)",
        y="True Positive Rate (Sensitivity)",
        color="Feature Sets") +
+  theme_classic() +
   theme(axis.text.x=element_text(color="black"),
         axis.text.y=element_text(color="black"),
-        text=element_text(size=24),
-        panel.grid.major=element_blank(),
-        panel.grid.minor=element_blank(),
-        panel.background=element_blank(),
-        panel.border=element_rect(fill=NA)) +
+        text=element_text(size=24)) +
   geom_abline(slope=1, linetype="dotted") +
   coord_fixed()
 ggsave(file.path("..", "plots", "mapsy_roc_new_rf.pdf"))
@@ -228,11 +226,8 @@ barDf <- data.frame(
 cols <- c("#585858", brewer.pal(4, "Set2"))
 ggplot(barDf, aes(FeatureSet, AUC)) +
   geom_bar(stat="identity", fill=cols, color="black") +
+  theme_classic() +
   theme(axis.text.x=element_text(angle=45, hjust=1),
-        text=element_text(size=24),
-        panel.grid.major=element_blank(),
-        panel.grid.minor=element_blank(),
-        panel.background=element_blank(),
-        panel.border=element_rect(fill=NA)) +
+        text=element_text(size=24)) +
   coord_cartesian(ylim=c(0.6, 0.9))
 ggsave(file.path("..", "plots", "mapsy_auc_feature_levels_rf_new.pdf"))

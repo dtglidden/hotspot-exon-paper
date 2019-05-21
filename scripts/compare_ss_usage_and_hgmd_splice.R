@@ -71,14 +71,11 @@ ggplot(dfSummary, aes(grp, meanUsage, fill=ss)) +
               textsize=7,
               margin_top=0.2) +
   labs(x="", y="Splice Site Usage (%)", fill="Splice Site") +
+  theme_classic() +
   theme(axis.text.x=element_text(color="black", angle=45, hjust=1),
         axis.text.y=element_text(color="black"),
         axis.title.y=element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)),
-        text=element_text(size=24),
-        panel.grid.major=element_blank(),
-        panel.grid.minor=element_blank(),
-        panel.background=element_blank(),
-        panel.border=element_rect(fill=NA))
+        text=element_text(size=24))
 ggsave(file.path("..", "plots", "usagePlotHGMD.pdf"))
 
 ## RBP plot
@@ -98,14 +95,12 @@ ggplot(dfSummary, aes(grp, meanUsage, fill=ss)) +
               textsize=7,
               margin_top=0.05) +
   labs(x="", y="Splice Site Usage (%)", fill="Splice Site") +
+  theme_classic() +
   theme(axis.text.x=element_text(color="black", angle=45, hjust=1),
         axis.text.y=element_text(color="black"),
-        axis.title.y=element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)),
-        text=element_text(size=24),
-        panel.grid.major=element_blank(),
-        panel.grid.minor=element_blank(),
-        panel.background=element_blank(),
-        panel.border=element_rect(fill=NA))
+        axis.title.y=element_text(color="white",
+                                  margin=margin(t=0, r=20, b=0, l=0)),
+        text=element_text(size=24))
 ggsave(file.path("..", "plots", "usagePlotRBP.pdf"))
 
 ## Incorporate amiloride usage data
@@ -137,12 +132,10 @@ ggplot(dfSummary, aes(grp, meanUsage, fill=ss)) +
               textsize=7,
               margin_top=0.2) +
   labs(x="", y="Splice Site Usage (%)", fill="Splice Site") +
+  theme_classic() +
   theme(axis.text.x=element_text(color="black", angle=45, hjust=1),
         axis.text.y=element_text(color="black"),
-        axis.title.y=element_text(margin=margin(t=0, r=20, b=0, l=0)),
-        text=element_text(size=24),
-        panel.grid.major=element_blank(),
-        panel.grid.minor=element_blank(),
-        panel.background=element_blank(),
-        panel.border=element_rect(fill=NA))
+        axis.title.y=element_text(color="white",
+                                  margin=margin(t=0, r=20, b=0, l=0)),
+        text=element_text(size=24))
 ggsave(file.path("..", "plots", "usagePlotAmilo.pdf"))

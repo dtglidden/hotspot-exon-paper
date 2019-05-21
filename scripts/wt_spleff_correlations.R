@@ -40,30 +40,30 @@ mapsyExons$alSkew <- AllelicSkew(
 
 exonData <- QueryExonsWithSSUsage()
 mapsyExons <- AddMcols(mapsyExons, exonData)
-mapsyExons$ssScoreSum <- mapsyExons$ss5score + mapsyExons$ss3score
-mapsyExons$ssScoreDiff <- mapsyExons$ss5score - mapsyExons$ss3score
-mapsyExons$ssScoreAbsDiff <- abs(mapsyExons$ss5score - mapsyExons$ss3score)
-mapsyExons$ssUsageSum <- mapsyExons$ss5usage + mapsyExons$ss3usage
-mapsyExons$ssUsageDiff <- mapsyExons$ss5usage - mapsyExons$ss3usage
-mapsyExons$ssUsageAbsDiff <- abs(mapsyExons$ss5usage - mapsyExons$ss3usage)
+#mapsyExons$ssScoreSum <- mapsyExons$ss5score + mapsyExons$ss3score
+#mapsyExons$ssScoreDiff <- mapsyExons$ss5score - mapsyExons$ss3score
+#mapsyExons$ssScoreAbsDiff <- abs(mapsyExons$ss5score - mapsyExons$ss3score)
+#mapsyExons$ssUsageSum <- mapsyExons$ss5usage + mapsyExons$ss3usage
+#mapsyExons$ssUsageDiff <- mapsyExons$ss5usage - mapsyExons$ss3usage
+#mapsyExons$ssUsageAbsDiff <- abs(mapsyExons$ss5usage - mapsyExons$ss3usage)
 
 
 ## Plot the correlation matrix
 featureNames <- c(
-  "Allelic Skew"="alSkew",
+  "M/W Ratio"="alSkew",
   "Splicing Efficiency"="splEff",
   "WT Spliced Counts"="vivo_ref_spliced",
   "WT Unspliced Counts"="vivo_ref_unspliced",
   "5'SS Maxent Score"="ss5score",
   "3'SS Maxent Score"="ss3score",
-  "Maxent Score Sum"="ssScoreSum",
-  "Maxent Score Diff"="ssScoreDiff",
-  "Maxent Score Abs Diff"="ssScoreAbsDiff",
+#  "Maxent Score Sum"="ssScoreSum",
+#  "Maxent Score Diff"="ssScoreDiff",
+#  "Maxent Score Abs Diff"="ssScoreAbsDiff",
   "5'SS Usage"="ss5usage",
   "3'SS Usage"="ss3usage",
-  "SS Usage Sum"="ssUsageSum",
-  "SS Usage Diff"="ssUsageDiff",
-  "SS Usage Abs Diff"="ssUsageAbsDiff",
+#  "SS Usage Sum"="ssUsageSum",
+#  "SS Usage Diff"="ssUsageDiff",
+#  "SS Usage Abs Diff"="ssUsageAbsDiff",
   "ESE Density"="chasin_ese_density",
   "ESS Density"="chasin_ess_density"
 )
