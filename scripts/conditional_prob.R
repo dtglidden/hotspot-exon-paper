@@ -52,6 +52,7 @@ fours  <- sapply(Filter(function(x) x[1, "bin"]==4, samps), function(x) x[2, "vi
 
 allSnv1 <- sapply(samps, function(x) x[1, "vivo_ratio"])
 allSnv1Sum <- summary(allSnv1)
+allSnv <- c(allSnv1, sapply(samps, function(x) x[2, "vivo_ratio"]))
 alls <- c(ones, twos, threes, fours, allSnv1)
 xAxis <- seq(floor(min(alls)), ceiling(max(alls)), by=0.5)
 
@@ -138,12 +139,12 @@ dev.off()
 
 
 
-## Plot the overall distribution of SNV1 to compare against the subdivisions
-ggplot(data.frame(allSnv1), aes(allSnv1)) +
+## Plot the overall distribution of all SNVs
+ggplot(data.frame(allSnv), aes(allSnv)) +
   geom_histogram(breaks=xAxis, color=NA) +
   ylab("Frequency") +
-  xlab("M/W Ratio of SNV 1") +
+  xlab("M/W Ratio") +
 #  ylim(myYlim) +
   theme_classic() +
   theme(text=element_text(size=24))
-ggsave(file.path("..", "plots", "conditional_prob_snv1.pdf"))
+ggsave(file.path("..", "plots", "conditional_prob_all_snv.pdf"))
