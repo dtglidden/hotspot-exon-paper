@@ -8,6 +8,8 @@ suppressPackageStartupMessages({
   library(dplyr)
 })
 
+set.seed(1)
+
 exsWithSSUsage <- QueryExonsWithSSUsage(as.GRanges=T)
 ## Add complete splice site regions to each exon
 exsWithSSUsageAndSites <- AddSpliceSites(exsWithSSUsage)
@@ -70,7 +72,7 @@ ggplot(dfSummary, aes(grp, meanUsage, fill=ss)) +
               annotation="***",
               textsize=7,
               margin_top=0.2) +
-  labs(x="", y="Splice Site Usage (%)", fill="Splice Site") +
+  labs(x="", y="Splice Site Usage", fill="Splice Site") +
   theme_classic() +
   theme(axis.text.x=element_text(color="black", angle=45, hjust=1),
         axis.text.y=element_text(color="black"),
@@ -94,7 +96,7 @@ ggplot(dfSummary, aes(grp, meanUsage, fill=ss)) +
               annotation="***",
               textsize=7,
               margin_top=0.05) +
-  labs(x="", y="Splice Site Usage (%)", fill="Splice Site") +
+  labs(x="", y="Splice Site Usage", fill="Splice Site") +
   theme_classic() +
   theme(axis.text.x=element_text(color="black", angle=45, hjust=1),
         axis.text.y=element_text(color="black"),
@@ -131,7 +133,7 @@ ggplot(dfSummary, aes(grp, meanUsage, fill=ss)) +
               annotation="***",
               textsize=7,
               margin_top=0.2) +
-  labs(x="", y="Splice Site Usage (%)", fill="Splice Site") +
+  labs(x="", y="Splice Site Usage", fill="Splice Site") +
   theme_classic() +
   theme(axis.text.x=element_text(color="black", angle=45, hjust=1),
         axis.text.y=element_text(color="black"),
