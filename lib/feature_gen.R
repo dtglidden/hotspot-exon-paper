@@ -1,10 +1,12 @@
 ## This file has functions for calculating genomic features (i.e. the don't depend on a supplied mutation)
-library(GenomicRanges, quietly=T)
-library(BSgenome.Hsapiens.UCSC.hg19, quietly=T)
-library(TxDb.Hsapiens.UCSC.hg19.knownGene)
-library(rPython, quietly=T)
-library(sqldf, quietly=T)
-source(file.path("..", "lib", "feature_query.R"))
+suppressPackageStartupMessages({
+  library(GenomicRanges, quietly=T)
+  library(BSgenome.Hsapiens.UCSC.hg19, quietly=T)
+  library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+  library(rPython, quietly=T)
+  library(sqldf, quietly=T)
+  source(file.path("..", "lib", "feature_query.R"))
+})
 
 ## Calls a MAXENT Perl script on a list of sequences
 ## seq: A character vector of splice site sequences
@@ -24,7 +26,7 @@ MaxentPerl <- function(seqs, script="score5.pl") {
 
 ## Get the 5'SS sequences for a list of exons
 ## exons: A GRanges object of exons
-GetSS5Seq <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19) {
+GetSS5Seq <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19, si=Seqinfo(genome="hg19")) {
   # The 5'SS is the last 3 nucleotides of the exon + the next 6 intronic nucleotides
   # Add the 6 downstream intronic bases to the coordinates
   sites <- flank(exons, 6, start=F)
@@ -33,14 +35,14 @@ GetSS5Seq <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19) {
   sites <- resize(sites, 9, fix="end")
 
   # Necessary when the resizing functions above create GRanges that are outside of their chromosomes
-  sites <- sites[end(sites) <= seqlengths(exs)[as.character(seqnames(sites))] & start(sites) > 0]
+  sites <- sites[end(sites) <= seqlengths(si)[as.character(seqnames(sites))] & start(sites) > 0]
 
   return(list(seq=getSeq(genome, sites, as.character=T), exon_id=sites$exon_id))
 }
 
 ## Get the 3'SS sequences for a list of exons
 ## exons: A GRanges object of exons
-GetSS3Seq <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19) {
+GetSS3Seq <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19, si=Seqinfo(genome="hg19")) {
   # The 3'SS is 20 nucleotides of the upstream intron + the first 3 nucleotides of the exon
   # Add the 20 upstream intronic bases to the coordinates
   sites <- flank(exons, 20)
@@ -49,7 +51,7 @@ GetSS3Seq <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19) {
   sites <- resize(sites, 23)
 
   # Necessary when the resizing functions above create GRanges that are outside of their chromosomes
-  sites <- sites[end(sites) <= seqlengths(exs)[as.character(seqnames(sites))] & start(sites) > 0]
+  sites <- sites[end(sites) <= seqlengths(si)[as.character(seqnames(sites))] & start(sites) > 0]
 
   return(list(seq=getSeq(genome, sites, as.character=T), exon_id=sites$exon_id))
 }
@@ -183,12 +185,13 @@ SSUsage2 <- function(files, exs, cellLine="hek293", gtf=file.path("..", "data", 
 }
 
 ## Tile through a string (window size n) and increment if a substring occurs in an environment (hashtable)
+## Essentially count k-mers
 countSubstringsOfN <- function(x, n, e) {
   nc <- nchar(x)
   return(sum(substring(x, 1:(nc - n + 1), n:nc) %in% e))
 }
 
-## Calculate the density of Chasin exonic cis-elements in exons
+## Calculate the density of Chasin cis-elements in exons
 ## exons: A GRanges object of exons
 ## genome: A BSgenome object that holds sequence info
 ## getESEs: A logical determining if we should calculate the ESE density (vs. the ESS density)
@@ -200,6 +203,23 @@ ChasinCisDen <- function(exons, getESEs=T, genome=BSgenome.Hsapiens.UCSC.hg19) {
   countSubsV <- Vectorize(countSubstringsOfN, "x", USE.NAMES=F)
   total <- countSubsV(getSeq(genome, exons, as.character=T), 6, elems)
   return(total / exLn)
+}
+
+## Calculates the average EI score of Chasin cis-elements in exons
+## exons: A GRanges object of exons
+## genome: A BSgenome object that holds sequence info
+AvgEI <- function(exons, genome=BSgenome.Hsapiens.UCSC.hg19) {
+  df <- read.table(file.path("..", "data", "chasin_ESS_ESE_need.txt"),
+                   row.names=1, col.names=c("seq", "score", "type"), sep="\t", na.strings="none")
+  exLn <- width(exons)
+
+  seqs <- getSeq(genome, exons, as.character=T)
+  hexamerScores <- lapply(seq_along(seqs), function(i) {
+    nc <- exLn[[i]]
+    hexamers <- substring(seqs[[i]], 1:(nc - 5), 6:nc)
+    scores <- df[hexamers, "score"]
+  })
+  return(sapply(seq_along(hexamerScores), function(i) mean(hexamerScores[[i]], na.rm=T)))
 }
 
 ## Calculates MaPSy-style log2 splicing efficiency
@@ -230,6 +250,26 @@ AllelicSkew <- function(ws, wu, ms, mu) {
 #######################
 ## Mutation Features ##
 #######################
+
+## Find the location of a mutation between 2 lists of sequences
+## If there are multiple mutations, it will return the first one per mut/wt pair
+## Vector lengths must be equal
+## wt: character vector
+## mut: character vector
+FindMutPos <- function(wt, mut) {
+  sapply(seq_along(wt), function(i) {
+    loc <- NA
+    wti <- wt[[i]]
+    muti <- mut[[i]]
+    for (j in 1:nchar(wti)) {
+      if (substr(wti, j, j) != substr(muti, j, j)) {
+        loc <- j
+        return(loc)
+      }
+    }
+    loc
+  })
+}
 
 ## Load a Mutation file (parses text supplied to web form)
 ## Output dataframe columns:
