@@ -2,25 +2,12 @@
 ## Plots a pie chart of the feature types used in the machine learning models
 suppressPackageStartupMessages({
   library(RColorBrewer)
+  library(stringi)
 })
 
-features <- as.data.frame(matrix(c(
-  "hek_ws", "Exon",
-  "hek_wu", "Exon",
-  "mutation_base_change", "Mutation",
-  "w5score", "Motif",
-  "w3score", "Motif",
-  "m5score", "Mutation",
-  "m3score", "Mutation",
-  "mwdif_5score", "Mutation",
-  "mwdif_3score", "Mutation",
-  "ss5usage", "Transcript",
-  "ss3usage", "Transcript",
-  "chasin_ese_density", "Exon",
-  "chasin_ess_density", "Exon"
-), ncol=2, byrow=T, dimnames=list(c(), c("feature", "level"))))
+features <- read.csv(file.path("..", "data", "feature_table.csv"), stringsAsFactors=F)
 
-fLevels <- factor(features$level, c("Mutation", "Motif", "Exon", "Transcript"))
+fLevels <- factor(stri_trans_totitle(features$level), c("Mutation", "Motif", "Exon", "Transcript"))
 tFLevels <- table(fLevels)
 labels <- sprintf("%s (%d)", names(tFLevels), tFLevels)
 myColors <- brewer.pal(length(tFLevels), "Set2")
