@@ -7,10 +7,19 @@
 suppressPackageStartupMessages({
   source(file.path("..", "lib", "feature_query.R"), chdir=T)
   source(file.path("..", "lib", "feature_gen.R"), chdir=T)
+  library(getopt)
   library(corrplot)
 })
 
-mapsyExons <- readRDS(file.path("..", "data", "mapsy_features_gr.rds"))
+opt <- getopt(matrix(c("test", "t", 0, "logical"),
+                     byrow=T, ncol=4))
+if (is.null(opt$test)) opt$test <- F
+
+mapsyExons <- if (opt$test) {
+  readRDS(file.path("..", "example_data", "features_test_gr.rds"))
+} else {
+  readRDS(file.path("..", "data", "mapsy_features_gr.rds"))
+}
 mapsyExons <- mapsyExons[!duplicated(ranges(mapsyExons))]
 
 mapsyExons$splEff <- MapsySplicingEfficiency(mapsyExons$hek_ws, mapsyExons$hek_wu)
