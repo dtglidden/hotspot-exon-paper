@@ -1,9 +1,18 @@
 #!/usr/bin/env Rscript
 suppressPackageStartupMessages({
+  library(getopt)
   library(ggplot2)
 })
 
-df <- read.delim(file.path("..", "data", "see-saw.txt"))
+opt <- getopt(matrix(c("test", "t", 0, "logical"),
+                     byrow=T, ncol=4))
+if (is.null(opt$test)) opt$test <- F
+
+df <- if (opt$test) {
+  read.delim(file.path("..", "example_data", "esco_test.txt"))
+} else {
+  read.delim(file.path("..", "data", "see-saw.txt"))
+}
 
 ggplot(df, aes(v_exon_eff, skip.incl, color=group)) +
   geom_point(size=2.5) +
