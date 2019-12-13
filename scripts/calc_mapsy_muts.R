@@ -2,7 +2,8 @@
 ## Calculate mutation features for MaPSy alleles
 
 suppressPackageStartupMessages({
-  source(file.path("..", "lib", "feature_gen.R"))
+  source(file.path("..", "lib", "feature_gen.R"), chdir=T)
+  library(getopt)
   library(sqldf)
   library(randomForest)
   library(gbm)
@@ -12,12 +13,24 @@ suppressPackageStartupMessages({
   library(parallel)
 })
 
+opt <- getopt(matrix(c("test", "t", 0, "logical"),
+                     byrow=T, ncol=4))
+if (is.null(opt$test)) opt$test <- F
+
 nCores <- detectCores()
 set.seed(1)
 
-exsWithSSUsage <- QueryExonsWithSSUsage(as.GRanges=T)
+exsWithSSUsage <- if (opt$test) {
+  readRDS(file.path("..", "example_data", "exons_with_ss_usage.rds"))
+} else {
+  QueryExonsWithSSUsage(as.GRanges=T)
+}
 
-gr <- readRDS(file.path("..", "data", "mapsy_features_gr.rds"))
+gr <- if (opt$test) {
+  readRDS(file.path("..", "example_data", "features_test_gr.rds"))
+} else {
+  readRDS(file.path("..", "data", "mapsy_features_gr.rds"))
+}
 ## Temp fix: change booleans to integers in order to train ML models
 gr$isWtPaired <- as.integer(gr$isWtPaired)
 gr$isMutPaired <- as.integer(gr$isMutPaired)
@@ -25,13 +38,13 @@ gr$isMutPaired <- as.integer(gr$isMutPaired)
 ## This way, the exon IDs are in the same order as those in 'gr'
 grMcols <- as.data.frame(mcols(gr))
 exomeMcols <- as.data.frame(mcols(exsWithSSUsage))
-exomMcolNames <- paste(c("ss5seq", "ss5score", "ss3seq", "ss3score",
+exomeMcolNames <- paste(c("ss5seq", "ss5score", "ss3seq", "ss3score",
                          "ss5usage", "ss3usage",
                          "chasin_ese_density", "chasin_ess_density",
                          "ei"), collapse=", ")
 mcols(gr) <- sqldf(sprintf(paste("SELECT grMcols.*, %s",
                                  "FROM grMcols LEFT JOIN exomeMcols",
-                                 "ON grMcols.exon_id=exomeMcols.exon_id;"), exomMcolNames))
+                                 "ON grMcols.exon_id=exomeMcols.exon_id;"), exomeMcolNames))
 gr <- gr[complete.cases(mcols(gr))]
 
 nRows <- length(gr)
@@ -40,12 +53,16 @@ trainIndices <- 1:splitIdx
 testIndices <- (splitIdx+1):nRows
 
 allelic_skew <- AllelicSkew(gr$hek_ws, gr$hek_wu, gr$hek_ms, gr$hek_mu)
-affects_splicing <- as.factor(allelic_skew >= log2(1.5)) # p-value?
+affects_splicing <- as.factor(allelic_skew >= log2(1.5))
 gr$affects_splicing <- affects_splicing
 response <- affects_splicing[trainIndices]
 responseGBM <- as.integer(response) - 1
 
-featureDf <- read.csv(file.path("..", "data", "feature_table.csv"), stringsAsFactors=F)
+featureDf <- if (opt$test) {
+  read.csv(file.path("..", "example_data", "feature_table.csv"), stringsAsFactors=F)
+} else {
+  read.csv(file.path("..", "data", "feature_table.csv"), stringsAsFactors=F)
+}
 
 ## Variations of the data, so we can compare how some features affect AUC
 mlDfAll <- as.data.frame(mcols(gr))[, featureDf$feature]
@@ -53,6 +70,7 @@ mlDfNoMuts <- as.data.frame(mcols(gr))[, featureDf$feature[featureDf$level != "m
 mlDfNoMotifs <- as.data.frame(mcols(gr))[, featureDf$feature[featureDf$level != "motif"]]
 mlDfNoExons <- as.data.frame(mcols(gr))[, featureDf$feature[featureDf$level != "exon"]]
 mlDfNoTranscripts <- as.data.frame(mcols(gr))[, featureDf$feature[featureDf$level != "transcript"]]
+mlDfNoUsage <- as.data.frame(mcols(gr))[, featureDf$feature[-c(13, 14)]]
 
 featureSets <- list(mlDfAll, mlDfNoMuts, mlDfNoMotifs, mlDfNoExons, mlDfNoTranscripts)
 
@@ -142,12 +160,13 @@ barDf <- data.frame(
     rocs[[5]]$auc[[1]]
   ))
 cols <- c("#585858", brewer.pal(4, "Set2"))
+yMin <- if (opt$test) 0 else 0.6
 ggplot(barDf, aes(FeatureSet, AUC)) +
   geom_bar(stat="identity", fill=cols, color="black") +
   theme_classic() +
-  theme(axis.text.x=element_text(angle=45, hjust=1),
-        text=element_text(size=24)) +
-  coord_cartesian(ylim=c(0.6, 0.9))
+  theme(axis.text.x=element_text(size=28, angle=45, hjust=1),
+        text=element_text(size=28)) +
+  coord_cartesian(ylim=c(yMin, 0.9))
 ggsave(file.path("..", "plots", "mapsy_auc_feature_levels_gbm_new_features.pdf"))
 
 ## Random Forest
@@ -181,7 +200,7 @@ barDf <- data.frame(
 ggplot(barDf, aes(FeatureSet, AUC)) +
   geom_bar(stat="identity", fill=cols, color="black") +
   theme_classic() +
-  theme(axis.text.x=element_text(angle=45, hjust=1),
-        text=element_text(size=24)) +
-  coord_cartesian(ylim=c(0.6, 0.9))
+  theme(axis.text.x=element_text(size=28, angle=45, hjust=1),
+        text=element_text(size=28)) +
+  coord_cartesian(ylim=c(yMin, 0.9))
 ggsave(file.path("..", "plots", "mapsy_auc_feature_levels_rf_new_features.pdf"))
