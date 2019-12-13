@@ -9,9 +9,9 @@ suppressPackageStartupMessages({
   library(VariantAnnotation)
   library(rtracklayer)
   library(gbm)
-  source(file.path("..", "lib", "feature_gen.R"))
-  source(file.path("..", "lib", "feature_query.R"))
-  source(file.path("..", "lib", "granges_util.R"))
+  source(file.path("..", "lib", "feature_gen.R"), chdir=T)
+  source(file.path("..", "lib", "feature_query.R"), chdir=T)
+  source(file.path("..", "lib", "granges_util.R"), chdir=T)
 })
 
 ## Loads a VCF file into a GRanges object
@@ -49,19 +49,9 @@ PrepareData <- function(gr, exs) {
 
 gbmModel <- readRDS(file.path("..", "data", "ml_model_no_hek.rds"))
 
-test <- as.data.frame(mcols(gr))[, c(
-  "mutation_base_change",
-  "w5score",
-  "w3score",
-  "m5score",
-  "m3score",
-  "mwdif_5score",
-  "mwdif_3score",
-  "ss5usage",
-  "ss3usage",
-  "chasin_ese_density",
-  "chasin_ess_density"
-)]
+featureDf <- read.csv(file.path("..", "data", "feature_table.csv"), stringsAsFactors=F) %>%
+  filter(!feature %in% c("hek_wu", "hek_ws"))
+test <- as.data.frame(mcols(gr))[, featureDf$feature]
 
 ## 'response' type scales values to the 0-1 interval
 ## (i.e. the probability of affecting splicing or not)

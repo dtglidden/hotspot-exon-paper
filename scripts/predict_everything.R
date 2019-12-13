@@ -5,8 +5,9 @@
 ## since these cannot be calculated from the genomic sequence
 
 suppressPackageStartupMessages({
-  source(file.path("..", "lib", "feature_gen.R"))
+  source(file.path("..", "lib", "feature_gen.R"), chdir=T)
   library(sqldf)
+  library(dplyr)
   library(gbm)
   library(VariantAnnotation)
 })
@@ -15,19 +16,9 @@ suppressPackageStartupMessages({
 gr <- readRDS(file.path("..", "data", "allMutsScored.rds"))
 gbmModel <- readRDS(file.path("..", "data", "ml_model_no_hek.rds"))
 
-test <- as.data.frame(mcols(gr))[, c(
-  "mutation_base_change",
-  "w5score",
-  "w3score",
-  "m5score",
-  "m3score",
-  "mwdif_5score",
-  "mwdif_3score",
-  "ss5usage",
-  "ss3usage",
-  "chasin_ese_density",
-  "chasin_ess_density"
-)]
+featureDf <- read.csv(file.path("..", "data", "feature_table.csv"), stringsAsFactors=F) %>%
+  filter(!feature %in% c("hek_wu", "hek_ws"))
+test <- as.data.frame(mcols(gr))[, featureDf$feature]
 
 ## 'response' type scales values to the 0-1 interval
 ## (i.e. the probability of affecting splicing or not)
