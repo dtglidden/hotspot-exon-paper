@@ -1,11 +1,11 @@
 ## This file has functions for calculating genomic features (i.e. the don't depend on a supplied mutation)
 suppressPackageStartupMessages({
-  library(GenomicRanges, quietly=T)
-  library(BSgenome.Hsapiens.UCSC.hg19, quietly=T)
+  library(GenomicRanges)
+  library(BSgenome.Hsapiens.UCSC.hg19)
   library(TxDb.Hsapiens.UCSC.hg19.knownGene)
-  library(rPython, quietly=T)
-  library(sqldf, quietly=T)
-  source(file.path("..", "lib", "feature_query.R"))
+  library(rPython)
+  library(sqldf)
+  source("feature_query.R")
 })
 
 ## Calls a MAXENT Perl script on a list of sequences

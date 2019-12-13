@@ -1,8 +1,10 @@
 ## This file has functions to query an SQL database of exonic features across the genome
 
-library(RSQLite)
-library(GenomicRanges)
-library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+suppressPackageStartupMessages({
+  library(RSQLite)
+  library(GenomicRanges)
+  library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+})
 
 dbSource <- file.path("..", "data", "features.db")
 
